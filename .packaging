@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurations>
+<archive destination="build" exploded="false" name="xmas.war" used="true">
+<folder excludes="" includes="" location="bin" name="bin" prefix="WEB-INF/classes" project="" projectLocation="bin" used="true"/>
+<folder excludes="" includes="" location="WEB-INF" name="WEB-INF" prefix="WEB-INF" project="" projectLocation="WEB-INF" used="true"/>
+<folder excludes="" includes="" location="lib-runtime" name="lib-runtime" prefix="WEB-INF/lib" project="" projectLocation="lib-runtime" used="true"/>
+<folder excludes="" includes="" location="docroot" name="docroot" prefix="" project="" projectLocation="docroot" used="true"/>
+</archive>
+</configurations>

@@ -1,0 +1,182 @@
+body{
+	margin: 0px;
+	background-image: url('images/xmas-background.gif');
+	background-color:#F5F5F5;
+}
+
+a {
+	color:black;
+}
+
+#initials {
+	background-color:#ca1827;
+	color:#fff;
+	width: 100%;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	padding: 2px;
+}
+
+#initials span {
+	border: 1px solid #a01313;
+	padding:0 5px 0 5px;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+
+#page {
+	background-color:#FFFFFF;
+	border:1px solid #000000;
+	margin: 35px 15px 15px 15px;
+	padding: 15px;
+	width:650px;
+}
+
+#header {
+	font-size:25px;
+	font-weight:bold;
+	text-decoration:underline;
+}
+
+.note {
+	color: #167101;
+}
+
+.selectedTab {
+	font-size:12px;
+	font-weight:bold;
+	text-align:left;
+	color:#000000;
+	padding:2px 15px 2px 5px;
+	background-color:#FFFFFF;
+	border:1px solid #000000;
+}
+.tabSpacing {
+	border-color:#DBE1F1;
+}
+
+.gift {
+	margin:15px;
+}
+
+.gift::after {
+    content:"";
+    display:block;
+    clear:both;
+}
+
+.gift .details {
+	float: left;
+	vertical-align: top;
+}
+
+.gift .purchased {
+	float: left;
+	vertical-align: top;
+}
+
+.gift .purchasedBy {
+	float: right;
+	font-weight:normal;
+	padding-left: 15px;
+	visibility:hidden;
+}	
+
+.gift.purchased_true .purchasedBy {
+	visibility:visible;
+}
+
+.gift input[type="checkbox"] {
+    display: none;
+}
+
+.gift input[type="checkbox"]+label {
+    background: url('images/check_off.png') no-repeat;
+    height: 35px;
+    padding-left: 35px;
+    display: inline-block;
+}
+
+.gift input[type="checkbox"]:checked + label {
+    background: url('images/check_on.png')  no-repeat;
+    height: 35px;
+    padding-left: 35px;
+    display: inline-block;
+}
+
+.gift .title {
+	font-weight:bold;
+	margin-bottom: 2px;
+}
+
+.gift.purchased_true .title {
+	text-decoration:line-through;"
+}
+
+
+.gift .descr {
+	margin-top:0px;
+	padding-left: 10px;
+	font-weight:normal;
+	font-size:small;
+}
+
+.gift.secret_true {
+	color: #167101;
+}
+
+.gift div.edit {
+	display:none;
+	margin-left: 35px;
+}
+
+.gift .descr img {
+	width:75px;
+}
+
+.gift input, .gift textarea {
+	width:80%;
+}
+
+.gift input[type=submit] {
+	background-color: #167101;
+	width:100px;
+	border-radius: 3px; 
+	-moz-border-radius: 3px; 
+	-webkit-border-radius: 3px; 
+	border: 1px solid #000;
+}
+
+#addGift img {
+	float:left;
+}
+
+#addGiftForm label {
+	display: inline-block;
+	margin: 3px 5px 3px 0px;
+	width:50px;
+	vertical-align: top;
+	text-align: right;
+}
+
+#addGiftForm div {
+	margin: 10px 0 10px 0;
+}
+
+#addGiftForm input, #addGiftForm textarea {
+	width:80%;
+}
+
+#addGiftForm textarea {
+	height: 65px;
+}
+
+#addGiftForm input[type=submit] {
+	background-color: #167101;
+	border-radius: 3px; 
+	-moz-border-radius: 3px; 
+	-webkit-border-radius: 3px; 
+	border: 1px solid #000;
+}

@@ -1,0 +1,187 @@
+<html>
+	<head>
+		<title>XMas 2016</title>
+		<link rel="stylesheet" href="style.css" type="text/css"/>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+		<script src="http://underscorejs.org/underscore-min.js"></script>
+	</head>
+	<body>
+
+<div id="initials"><span>JMP</span><span>NTP</span><span>CDP</span><span>MKP</span><span>LXF</span><span>SLF</span><span>EXF</span><span>MEF</span><span>JSF</span><span>JRP</span><span>MAP</span><span>MLG</span></div>
+
+	<div id="page">
+
+	<div id="header">Your Christmas Wishlist</div>
+	<div class="note">* Green indicates gift suggestion.</div>
+	
+  <div id="wishlist">
+  </div>
+		
+<script type="text/template" id="wishlistTemplate">
+  <div id="gift_<%= giftId %>" class="gift secret_<%= secret %>">
+	  <div class="purchased"><input value="<%= giftId %>" id="purchased_<%= giftId %>" type="checkbox"/><label for="purchased_<%= giftId %>"></label></div>
+	  <div class="details">
+		<div>
+		  <div class="title"><span><%= title %></span> <a class="link" target="_blank" href="<%= url %>"><img src="images/extLink.gif"/></a><div class="purchasedBy">(<%= purchasedBy %>)</div></div>
+		</div>
+		<div class="descr"><%= descr %></div>
+	  </div>
+	  <div class="edit">
+		<form><input name="giftId" type="hidden" value="<%= giftId %>"/>
+		 	<div><input name="title" type="text" value="<%= title %>"/></div>
+		 	<div><input name="url" type="text" value="<%= url %>"/></div>
+			<div><textarea name="descr"><%= descr %></textarea></div>
+			<div><input type="submit" value="Update"/></div>
+	  </div>
+	  </form>
+  </div>
+</script>
+
+	<div id="addGift">
+		<img src="images/gifts.gif"><h2>Add Gift Idea</h2>
+		<div>Use the form below to add gift ideas. To add a link, copy the url from the browser and paste it in the link field.</div>
+		<div style="clear:both"></div>
+		<a anchor="edit"/>
+		<form id="addGiftForm">
+			<div>
+			<label>Gift:</label><input type="text" name="title"/><br/>
+			<label>Link:</label><input type="text" name="url"/><br/>
+			<label>Descr:</label><textarea name="descr"></textarea><br/>
+			</div>
+			<label>&nbsp</label><input type="submit" value="Add"/>
+		</form>
+	</div>
+	
+	<div style="clear:both"></div>
+	
+	<script>
+		var template = _.template($("#wishlistTemplate").html());
+
+		$( document ).ready(function() {
+
+			$("#addGift form").on("submit", function(e) {
+				e.preventDefault();
+
+				var gift = {
+					title: $("#addGiftForm input[name=title]").val(),
+					descr: $("#addGiftForm textarea[name=descr]").val(),
+					url: $("#addGiftForm input[name=url]").val()
+				};
+
+
+				wishlist.submitGift(gift);
+			});
+
+			$("#initials span").on("click", function(e) {
+				wishlist.loadWishList($(this).html());
+			});
+
+			wishlist.myWishList();
+			
+		});
+
+		var wishlist = {
+			myWishList: function() {
+				$.ajax({
+					url: "api/id"
+				}).done(function(data) {
+				   	wishlist.loadWishList(data);
+				});
+			},
+			loadWishList: function(newInitials) {
+				$.ajax({
+					url: "api/" + newInitials + "/"
+				}).done(function(data) {
+					wishlist.initials=newInitials;
+					$("#header").html(wishlist.initials + " Christmas Wishlist");
+					$("#wishlist").empty();
+					_.each(data, function(g) {
+					   	wishlist.renderGift(g);
+					});
+				});
+			},
+			submitGift: function(gift) {
+				$.ajax({
+					type: "PUT",
+					contentType: "application/json",
+					url: "api/" + wishlist.initials + "/",
+					data: JSON.stringify(gift)
+				}).done(function(data) {
+					$("#addGiftForm")[0].reset();
+					wishlist.renderGift(data);
+				})
+			},
+			purchasedGift: function(giftId) {
+				$.ajax({
+					url: "api/" + giftId + "/purchased"
+				}).done(function(purchasedBy){
+					$("#gift_" + giftId).toggleClass("purchased_true");
+					$("#gift_" + giftId).find(".purchasedBy").html("(" + purchasedBy + ")");
+				}).fail(function(){
+					$("#gift_" + giftId).find(".purchased input[type=checkbox]").prop('checked', false);
+				})
+			},
+			renderGift: function(gift){
+			   	var rawHtml = template(gift);
+				var giftElement = $("#wishlist").append(rawHtml).children().last();
+				giftElement.on("change", function(e){});
+				if (gift.url == null) {
+					giftElement.find(".link").hide();
+				}
+				if (gift.purchased == true) {
+					giftElement.find(".purchased input[type=checkbox]").prop('checked', true);
+					giftElement.addClass("purchased_true");
+				}
+
+				//toggle purchased state
+				giftElement.find(".purchased input[type=checkbox]").on("change", function(e){
+					var giftId = $(e.currentTarget).val();
+					wishlist.purchasedGift(giftId);
+				});
+
+				//toggle edit mode on existing gift
+				giftElement.find(".title span, .descr").on("click", function(e){
+					giftElement.find(".details").hide();
+					giftElement.find(".edit").show();
+				});
+
+				//handle updating gift
+				giftElement.find("form").on("submit", function(e){
+					e.preventDefault();
+					var form = giftElement.find("form");
+					var g = {
+						giftId: form.find("input[name=giftId]").val(),
+						title: form.find("input[name=title]").val(),
+						descr: form.find("textarea[name=descr]").val(),
+						url: form.find("input[name=url]").val()
+					};
+
+					$.ajax({
+						type: "POST",
+						contentType: "application/json",
+						url: "api/" + wishlist.initials + "/",
+						data: JSON.stringify(g)
+					}).done(function(data) {
+						giftElement.find(".edit").hide();
+						giftElement.find(".details").show();
+						giftElement.find(".details .title span").html(g.title);
+						giftElement.find(".details .descr").html(g.descr);
+						giftElement.find(".details .link").attr("href", g.url);
+					});
+				});
+
+			}
+
+		}
+	</script>   
+
+ 
+	</body>
+</html>
+
+
+
+
+
+
+
