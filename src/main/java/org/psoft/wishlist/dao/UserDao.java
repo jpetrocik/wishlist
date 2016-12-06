@@ -18,11 +18,11 @@ public class UserDao {
 		addUser(new WishlistUser("MKP", "marhiyana@petrocik.net"));
 		addUser(new WishlistUser("CDP", "cadel@petrocik.net"));
 		addUser(new WishlistUser("JRP", "jrp@petrocik.net"));
-		addUser(new WishlistUser("EXP", "exferrara@gmail.com"));
 		addUser(new WishlistUser("MAP", "map@petrocik.net"));
+		addUser(new WishlistUser("EXF", "exferrara@gmail.com"));
+		addUser(new WishlistUser("SLF", null));
 		addUser(new WishlistUser("JSF", null));
 		addUser(new WishlistUser("MEF", null));
-		addUser(new WishlistUser("SLF", null));
 		addUser(new WishlistUser("MLG", null));
 	}
 
