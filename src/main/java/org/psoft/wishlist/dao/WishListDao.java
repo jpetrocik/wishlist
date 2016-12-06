@@ -131,7 +131,6 @@ public class WishListDao {
 		Connection connection = null;
 		
 		if (StringUtils.isBlank(gift.getTitle()) ||
-				StringUtils.isBlank(gift.getInitials()) ||
 				gift.getGiftId() <1){
 			throw new RuntimeException("Incomplete gift data");
 		}

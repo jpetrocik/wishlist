@@ -18,7 +18,7 @@ public class Application {
 	public DataSource dataSource(){
 		BasicDataSource dataSource = new BasicDataSource();
 		dataSource.setDriverClassName("com.mysql.jdbc.Driver");
-		dataSource.setUrl("jdbc:mysql://petrocik.net:3306/personal");
+		dataSource.setUrl("jdbc:mysql://petrocik.net:3306/personal?useSSL=false");
 		dataSource.setUsername("john");
 		dataSource.setPassword("oropez");
 		
