@@ -75,10 +75,34 @@ public class WishListDao {
 		return wishList;
 	}
 
-	public void save(List<Gift> wishList) {
-		for (Gift gift : wishList){
-			save(gift);
+	public Gift find(long giftId) {
+		List<Gift> wishList = new ArrayList<Gift>();
+		
+		Connection connection = null;
+		try {
+			connection = dataSource.getConnection();
+			PreparedStatement statement = connection.prepareStatement("select * from GIFT where GIFT_ID=?");
+			statement.setLong(1, giftId);
+			ResultSet results = statement.executeQuery();
+			while(results.next()){
+				wishList.add(toGift(results));
+			}
+		} catch (Exception e) {
+			String msg = "Unable to fetch gift " + giftId;
+			log.error(msg, e);
+			throw new RuntimeException(msg, e);
+		} finally {
+			try {
+				connection.close();
+			} catch (SQLException e) {
+				log.error("Failed to close connection", e);
+			}
 		}
+		
+		if (wishList.isEmpty())
+			return null;
+		
+		return wishList.get(0);
 	}
 	
 	public Gift save(Gift gift) {

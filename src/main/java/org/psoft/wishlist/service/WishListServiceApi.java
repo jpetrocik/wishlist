@@ -7,6 +7,8 @@ import javax.servlet.http.HttpSession;
 
 import org.psoft.wishlist.dao.WishListDao;
 import org.psoft.wishlist.dao.data.Gift;
+import org.psoft.wishlist.service.events.GiftAddEvent;
+import org.psoft.wishlist.service.events.GiftPurchasedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,9 +16,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.common.eventbus.EventBus;
+
 @RestController
 public class WishListServiceApi {
 
+	@Autowired
+	EventBus eventBus;
+	
 	@Autowired
 	WishListDao wishListDao;
 
@@ -53,24 +60,40 @@ public class WishListServiceApi {
 			gift.setSecret(true);
 		}
 		gift.setInitials(initials);
+
+		GiftAddEvent event = new GiftAddEvent();
+		event.initials = initials;
+		event.title = gift.getTitle();
 		
+		eventBus.post(event);
+
 		return wishListDao.save(gift);
 		
 	}
 	
-	@RequestMapping(path="/api/{initials}/", method=RequestMethod.POST)
+	@RequestMapping(path="/api/{initials}/{giftId}", method=RequestMethod.POST)
 	public Gift save(@PathVariable String initials, @RequestBody Gift gift, HttpSession session){
 		gift = wishListDao.save(gift);
 		return gift;
 	}
 
-    @RequestMapping("/api/{giftId}/purchased")
-    public String purchasedToggle(@PathVariable Integer giftId, HttpSession session){
+    @RequestMapping("/api/{initials}/{giftId}/purchased")
+    public String purchasedToggle(@PathVariable String initials, @PathVariable Integer giftId, HttpSession session){
 		String user = (String) session.getAttribute("user");
 		int updated = wishListDao.purchased(giftId, user);
 		if (updated == 0) {
 			throw new RuntimeException("Update failed");
 		}
+
+		Gift gift = wishListDao.find(giftId);
+		
+		GiftPurchasedEvent event = new GiftPurchasedEvent();
+		event.initials = initials;
+		event.title = gift.getTitle();
+		event.purchasedBy = user;
+		
+		eventBus.post(event);
+
 		
         return user;
 	}

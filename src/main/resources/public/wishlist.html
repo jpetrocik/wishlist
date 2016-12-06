@@ -55,73 +55,27 @@
 	<div style="clear:both"></div>
 	
 	<script>
-		var template = _.template($("#wishlistTemplate").html());
 
 		$( document ).ready(function() {
+			var template = _.template($("#wishlistTemplate").html());
 
-			$("#addGift form").on("submit", function(e) {
-				e.preventDefault();
-
-				var gift = {
-					title: $("#addGiftForm input[name=title]").val(),
-					descr: $("#addGiftForm textarea[name=descr]").val(),
-					url: $("#addGiftForm input[name=url]").val()
-				};
-
-
-				wishlist.submitGift(gift);
-			});
-
-			$("#initials span").on("click", function(e) {
-				wishlist.loadWishList($(this).html());
-			});
-
-			wishlist.myWishList();
-			
-		});
-
-		var wishlist = {
-			myWishList: function() {
-				$.ajax({
-					url: "api/id"
-				}).done(function(data) {
-				   	wishlist.loadWishList(data);
+			var renderWishlist = function(data) {
+				$("#header").html(wishlist.initials + " Christmas Wishlist");
+				$("#wishlist").empty();
+				_.each(data, function(g) {
+				   	renderGift(g);
 				});
-			},
-			loadWishList: function(newInitials) {
-				$.ajax({
-					url: "api/" + newInitials + "/"
-				}).done(function(data) {
-					wishlist.initials=newInitials;
-					$("#header").html(wishlist.initials + " Christmas Wishlist");
-					$("#wishlist").empty();
-					_.each(data, function(g) {
-					   	wishlist.renderGift(g);
-					});
-				});
-			},
-			submitGift: function(gift) {
-				$.ajax({
-					type: "PUT",
-					contentType: "application/json",
-					url: "api/" + wishlist.initials + "/",
-					data: JSON.stringify(gift)
-				}).done(function(data) {
-					$("#addGiftForm")[0].reset();
-					wishlist.renderGift(data);
-				})
-			},
-			purchasedGift: function(giftId) {
-				$.ajax({
-					url: "api/" + giftId + "/purchased"
-				}).done(function(purchasedBy){
-					$("#gift_" + giftId).toggleClass("purchased_true");
-					$("#gift_" + giftId).find(".purchasedBy").html("(" + purchasedBy + ")");
-				}).fail(function(){
-					$("#gift_" + giftId).find(".purchased input[type=checkbox]").prop('checked', false);
-				})
-			},
-			renderGift: function(gift){
+			};
+
+			var rerenderGift = function(gift, giftElement) {
+				giftElement.find(".edit").hide();
+				giftElement.find(".details").show();
+				giftElement.find(".details .title span").html(gift.title);
+				giftElement.find(".details .descr").html(gift.descr);
+				giftElement.find(".details .link").attr("href", gift.url);
+			};
+
+			var renderGift = function(gift) {
 			   	var rawHtml = template(gift);
 				var giftElement = $("#wishlist").append(rawHtml).children().last();
 				giftElement.on("change", function(e){});
@@ -149,30 +103,91 @@
 				giftElement.find("form").on("submit", function(e){
 					e.preventDefault();
 					var form = giftElement.find("form");
-					var g = {
+					var updates = {
 						giftId: form.find("input[name=giftId]").val(),
 						title: form.find("input[name=title]").val(),
 						descr: form.find("textarea[name=descr]").val(),
 						url: form.find("input[name=url]").val()
 					};
 
-					$.ajax({
-						type: "POST",
-						contentType: "application/json",
-						url: "api/" + wishlist.initials + "/",
-						data: JSON.stringify(g)
-					}).done(function(data) {
-						giftElement.find(".edit").hide();
-						giftElement.find(".details").show();
-						giftElement.find(".details .title span").html(g.title);
-						giftElement.find(".details .descr").html(g.descr);
-						giftElement.find(".details .link").attr("href", g.url);
+					wishlist.updateGift(updates, function(data) {
+						rerenderGift(data, giftElement);
 					});
 				});
 
-			}
+			};
 
-		}
+			$("#addGift form").on("submit", function(e) {
+				e.preventDefault();
+
+				var gift = {
+					title: $("#addGiftForm input[name=title]").val(),
+					descr: $("#addGiftForm textarea[name=descr]").val(),
+					url: $("#addGiftForm input[name=url]").val()
+				};
+
+
+				wishlist.submitGift(gift, function(data){
+					$("#addGiftForm")[0].reset();
+					renderGift(data);
+				});
+			});
+
+			$("#initials span").on("click", function(e) {
+				wishlist.loadWishList($(this).html(), renderWishlist);
+			});
+
+			wishlist.myWishList(renderWishlist);
+			
+		});
+
+		var wishlist = {
+			myWishList: function(callback) {
+				$.ajax({
+					url: "api/id"
+				}).done(function(data) {
+				   	wishlist.loadWishList(data, callback);
+				});
+			},
+			loadWishList: function(newInitials, callback) {
+				$.ajax({
+					url: "api/" + newInitials + "/"
+				}).done(function(data) {
+					wishlist.initials=newInitials;
+					callback(data);
+				});
+			},
+			submitGift: function(gift, callback) {
+				$.ajax({
+					type: "PUT",
+					contentType: "application/json",
+					url: "api/" + wishlist.initials + "/",
+					data: JSON.stringify(gift)
+				}).done(function(data) {
+					callback(data);
+				})
+			},
+			updateGift: function(gift, callback) {
+				$.ajax({
+					type: "POST",
+					contentType: "application/json",
+					url: "api/" + wishlist.initials + "/" + gift.giftId,
+					data: JSON.stringify(gift)
+				}).done(function(data) {
+					callback(data);
+				});
+			},
+			purchasedGift: function(giftId) {
+				$.ajax({
+					url: "api/" + wishlist.initials + "/" + giftId + "/purchased"
+				}).done(function(purchasedBy){
+					$("#gift_" + giftId).toggleClass("purchased_true");
+					$("#gift_" + giftId).find(".purchasedBy").html("(" + purchasedBy + ")");
+				}).fail(function(){
+					$("#gift_" + giftId).find(".purchased input[type=checkbox]").prop('checked', false);
+				})
+			}
+		};
 	</script>   
 
  
