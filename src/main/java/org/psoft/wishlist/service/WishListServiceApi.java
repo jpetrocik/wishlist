@@ -87,13 +87,14 @@ public class WishListServiceApi {
 
 		Gift gift = wishListDao.find(giftId);
 		
-		GiftPurchasedEvent event = new GiftPurchasedEvent();
-		event.initials = initials;
-		event.title = gift.getTitle();
-		event.purchasedBy = user;
-		
-		eventBus.post(event);
-
+		if (gift.isPurchased()) {
+			GiftPurchasedEvent event = new GiftPurchasedEvent();
+			event.initials = initials;
+			event.title = gift.getTitle();
+			event.purchasedBy = user;
+			
+			eventBus.post(event);
+		}
 		
         return user;
 	}

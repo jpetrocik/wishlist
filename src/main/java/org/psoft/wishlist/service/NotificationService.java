@@ -76,7 +76,9 @@ public class NotificationService {
 			}
 			
 			if (!addEvents.isEmpty()) {
-				body.append("\n\n\n\n**************** Gifts Additionals ****************\n\n");
+				if (body.length() > 0)
+					body.append("\n\n\n\n");
+				body.append("**************** Gift Additions ****************\n\n");
 				for (GiftAddEvent e : addEvents ) {
 					body.append(e.toString() + "\n\n");
 				}
