@@ -1,12 +1,14 @@
 package org.psoft.wishlist.service.events;
 
+import org.psoft.wishlist.dao.data.Gift;
+
 public class GiftAddEvent {
 	
-	public String initials;
+	public String who;
 	
-	public String title;
+	public Gift gift;
 	
 	public String toString() {
-		return initials + " added \"" + title + "\"";
+		return who + " added \"" + gift.getTitle() + "\"" + (gift.isSecret()?" for " + gift.getInitials():"");
 	}
 }

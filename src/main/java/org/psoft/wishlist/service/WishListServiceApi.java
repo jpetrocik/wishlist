@@ -5,6 +5,8 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.psoft.wishlist.dao.WishListDao;
 import org.psoft.wishlist.dao.data.Gift;
 import org.psoft.wishlist.service.events.GiftAddEvent;
@@ -20,7 +22,7 @@ import com.google.common.eventbus.EventBus;
 
 @RestController
 public class WishListServiceApi {
-
+	
 	@Autowired
 	EventBus eventBus;
 	
@@ -62,9 +64,8 @@ public class WishListServiceApi {
 		gift.setInitials(initials);
 
 		GiftAddEvent event = new GiftAddEvent();
-		event.initials = initials;
-		event.title = gift.getTitle();
-		
+		event.who = user;
+		event.gift = gift;
 		eventBus.post(event);
 
 		return wishListDao.save(gift);
@@ -89,10 +90,8 @@ public class WishListServiceApi {
 		
 		if (gift.isPurchased()) {
 			GiftPurchasedEvent event = new GiftPurchasedEvent();
-			event.initials = initials;
-			event.title = gift.getTitle();
-			event.purchasedBy = user;
-			
+			event.who = user;
+			event.gift = gift;
 			eventBus.post(event);
 		}
 		

@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.psoft.wishlist.dao.UserDao;
@@ -61,8 +62,12 @@ public class NotificationService {
 
 	protected void sendEmail() {
 		for (WishlistUser user : userDao.findAll()) {
-			List<GiftPurchasedEvent> purchasedEvents = purchasedGifts.stream().filter(f-> !f.initials.equals(user.getInitials())).collect(Collectors.toList());
-			List<GiftAddEvent> addEvents = addedGifts.stream().filter(f-> !f.initials.equals(user.getInitials())).collect(Collectors.toList());
+			
+			if (StringUtils.isBlank(user.getEmail()))
+				continue;
+			
+			List<GiftPurchasedEvent> purchasedEvents = purchasedGifts.stream().filter(f-> !f.gift.getInitials().equals(user.getInitials())).collect(Collectors.toList());
+			List<GiftAddEvent> addEvents = addedGifts.stream().filter(f-> !f.gift.getInitials().equals(user.getInitials())).collect(Collectors.toList());
 			if (addEvents.isEmpty() && purchasedEvents.isEmpty()) {
 				continue;
 			}
@@ -99,13 +104,13 @@ public class NotificationService {
 
 	@Subscribe
 	public void eventGiftAdd(GiftAddEvent e) {
-		log.info("Recieve giftAddEvent for " + e.initials);
+		log.info(e);
 		addedGifts.add(e);
 	}
 
 	@Subscribe
 	public void eventGiftPurchased(GiftPurchasedEvent e) {
-		log.info("Recieve giftPurchasedEvent for " + e.initials);
+		log.info(e);
 		purchasedGifts.add(e);
 	}
 

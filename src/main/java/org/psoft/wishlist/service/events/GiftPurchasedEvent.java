@@ -1,15 +1,15 @@
 package org.psoft.wishlist.service.events;
 
+import org.psoft.wishlist.dao.data.Gift;
+
 public class GiftPurchasedEvent {
 
-	public String initials;
+	public String who;
 	
-	public String title;
-	
-	public String purchasedBy;
+	public Gift gift;
 	
 	public String toString() {
-		return purchasedBy + " purchased \"" + title + "\" for " + initials;
+		return who + " purchased \"" + gift.getTitle() + "\" for " + gift.getInitials();
 	}
 
 }

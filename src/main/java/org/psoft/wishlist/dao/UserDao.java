@@ -20,6 +20,10 @@ public class UserDao {
 		addUser(new WishlistUser("JRP", "jrp@petrocik.net"));
 		addUser(new WishlistUser("EXP", "exferrara@gmail.com"));
 		addUser(new WishlistUser("MAP", "map@petrocik.net"));
+		addUser(new WishlistUser("JSF", null));
+		addUser(new WishlistUser("MEF", null));
+		addUser(new WishlistUser("SLF", null));
+		addUser(new WishlistUser("MLG", null));
 	}
 
 	private void addUser(WishlistUser wishlistUser) {
