@@ -18,8 +18,8 @@ public class TestWishListDao {
 		BasicDataSource dataSource = new BasicDataSource();
 		dataSource.setDriverClassName("com.mysql.jdbc.Driver");
 		dataSource.setUrl("jdbc:mysql://hermes.petrocik.net:3306/personal");
-		dataSource.setUsername("john");
-		dataSource.setPassword("oropez");
+		dataSource.setUsername("");
+		dataSource.setPassword("");
 		
 		uut = new WishListDao();
 		uut.dataSource = dataSource;

@@ -23,10 +23,10 @@ public class Application {
 	@Value("${jdbc.url:jdbc:mysql://petrocik.net:3306/personal?useSSL=false}")
 	String dbUrl;
 
-	@Value("${database.user:john}")
+	@Value("${database.user}")
 	String dbUser;
 
-	@Value("${database.password:oropez}")
+	@Value("${database.password}")
 	String dbPassword;
 
 	@Bean
