@@ -1,46 +1,28 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <html>
 	<head>
-    <title>XMas 2016</title>
+		<title>Christmas Registry</title>
+		<link rel="stylesheet" href="style.css" type="text/css"/>
+		<link rel="stylesheet" href="login.css" type="text/css"/>
   	</head>
-	<body BGCOLOR=#FFFFFF>
-<table border="0" cellpadding="0" cellspacing="0" align="center" width="472">
-<tr>
-	<td rowspan="2"><img src="images/santa.gif"></td>
-	<td valign="top"><img src="images/santa2.gif"></td>
-</tr>
-<tr>
-	<td valign="top">
-	<p>
-	Welcome to the Petrocik's Christmas List.  Select your name from the
-	list below.  Be  careful not to select somebody else's name.
-	</p>
-	<p>
-    <form method="GET" action='wishlist.html' name="loginForm">
-        Merry Christmas&nbsp;&nbsp;
-	<select name="userId">
-	<option value="MLG">MLG</option>
-	<option value="MAP">MAP</option>
-	<option value="JRP">JRP</option>
-	<option value="LXF">LXF</option>
-	<option value="EXF">EXF</option>
-	<option value="SLF">SLF</option>
-	<option value="MEF">MEF</option>
-	<option value="JSF">JSF</option>
-	<option value="JMP">JMP</option>
-	<option value="NTP">NTP</option>
-	<option value="MKP">MKP</option>
-	<option value="CDP">CDP</option>
-	</select>       &nbsp;       <input type="submit" value="Login"/>
-	</form>
-	</td>
-</tr>
-</table>
-<center>
-    <form method="GET" action='wishlist.html' name="loginForm">
-        <input type="hidden" name="userId" value="xxx"/>
-        <input type="submit" value="Guest"/>
-	</form>
-</center>
-</body>
+	<body>
+	<div id="login">
+		<img id="santa" src="images/cute-santa.jpg"/>
+	<table>
+		<tbody><tr>
+			<td id="login-header">Christmas @PNet</td>
+		</tr>
+		<tr>
+			<td id="login-form">
+			    <form method="GET" action="wishlist.html" name="loginForm">
+                <input type="text" name="userId" placeholder="Username"><br>
+				<input type="text" name="password" placeholder="Password"><br>
+				<input type="submit" value="Login">
+				</form>
+			</td>
+		</tr>
+		</tbody>
+	</table>
+	</div>
+	</body>
 </html>

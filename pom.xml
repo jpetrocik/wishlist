@@ -4,7 +4,7 @@
 	<groupId>org.psoft</groupId>
 	<artifactId>WishList</artifactId>
 	<packaging>jar</packaging>
-	<version>2016.0.0</version>
+	<version>2018.0.0</version>
 	<description />
 
 	<properties>
