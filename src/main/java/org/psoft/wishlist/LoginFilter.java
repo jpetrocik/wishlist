@@ -28,27 +28,29 @@ public class LoginFilter implements Filter {
 	     if (StringUtils.startsWith(path, "/login.html") || StringUtils.startsWith(path, "/images") || StringUtils.endsWith(path, "css"))
 		     filterChain.doFilter(_request, _response);
 	     else {
+
+	    	 //check if logged in
+	    	 String user = (String) session.getAttribute("user");
 	    	 
-	    	 //check password
-		     String password = request.getParameter("password");
-		     if ("2018".equals(StringUtils.trim(password))) {
-		            response.sendRedirect("/login.html");
-		            return;
-		     }
+		     if (StringUtils.isBlank(user)){
+
+		    	 //check password
+			     String password = request.getParameter("password");
+			     if (!"2018".equals(StringUtils.trim(password))) {
+			            response.sendRedirect("/login.html");
+			            return;
+			     }
 		     
-		     //log in if requested
-		     String user = request.getParameter("userId");
-		     if (StringUtils.isNotBlank(user)){
-		    	 session.setAttribute("user", StringUtils.upperCase(user));
-		     } else {	     
-		    	 
-		    	 //check if logged in
-		    	 user = (String) session.getAttribute("user");
-			     if (StringUtils.isBlank(user)){
+			     //log in if requested
+			     user = request.getParameter("userId");
+			     if (StringUtils.isNotBlank(user)){
+			    	 session.setAttribute("user", StringUtils.upperCase(user));
+			     } else {
 		            response.sendRedirect("/login.html");
 		            return;
 			     }
-		     }
+			     
+		     } 
 		     
 		     filterChain.doFilter(_request, _response);
 	     }
