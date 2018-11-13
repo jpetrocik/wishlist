@@ -20,13 +20,13 @@ import com.google.common.eventbus.EventBus;
 @SpringBootApplication
 public class Application {
 
-	@Value("${jdbc.url:jdbc:mysql://petrocik.net:3306/personal?useSSL=false}")
+	@Value("${jdbc.url}")
 	String dbUrl;
 
-	@Value("${database.use:john}")
+	@Value("${database.user}")
 	String dbUser;
 
-	@Value("${database.password:oropez}")
+	@Value("${database.password}")
 	String dbPassword;
 
 	@Bean

@@ -25,32 +25,45 @@ public class LoginFilter implements Filter {
 	     HttpSession session = request.getSession();
 	        
 	     String path = request.getServletPath();
-	     if (StringUtils.startsWith(path, "/login.html") || StringUtils.startsWith(path, "/images") || StringUtils.endsWith(path, "css"))
-		     filterChain.doFilter(_request, _response);
-	     else {
 
-	    	 //check if logged in
-	    	 String user = (String) session.getAttribute("user");
-	    	 
-		     if (StringUtils.isBlank(user)){
+	    //unsecured assets
+	    if (StringUtils.startsWith(path, "/login.html") || StringUtils.startsWith(path, "/images") || StringUtils.endsWith(path, "css")) {
+		    filterChain.doFilter(_request, _response);
 
-		    	 //check password
-			     String password = request.getParameter("password");
-			     if (!"2018".equals(StringUtils.trim(password))) {
-			            response.sendRedirect("/login.html");
-			            return;
-			     }
-		     
-			     //log in if requested
-			     user = request.getParameter("userId");
-			     if (StringUtils.isNotBlank(user)){
-			    	 session.setAttribute("user", StringUtils.upperCase(user));
-			     } else {
-		            response.sendRedirect("/login.html");
-		            return;
-			     }
-			     
-		     } 
+		//signout
+	    } else if (StringUtils.startsWith(path, "/signout")) {
+			session.removeAttribute("user");
+		    response.sendRedirect("/login.html");
+		    return;
+
+		//signin
+	    } else if (StringUtils.startsWith(path, "/signin")) {
+
+			//check password
+			String password = request.getParameter("password");
+			if (!"2018".equals(StringUtils.trim(password))) {
+			    response.sendRedirect("/login.html");
+			    return;
+			}
+
+			//set user or redirect to login
+			String user = request.getParameter("userId");
+			if (StringUtils.isNotBlank(user)){
+				session.setAttribute("user", StringUtils.upperCase(user));
+				response.sendRedirect("/wishlist.html");
+			} else {
+				response.sendRedirect("/login.html");
+				return;
+			}
+
+		//confirmed logged in and continue
+		} else {
+
+	    	String user = (String) session.getAttribute("user");
+		    if (StringUtils.isBlank(user)){
+		        response.sendRedirect("/login.html");
+		        return;
+			}
 		     
 		     filterChain.doFilter(_request, _response);
 	     }

@@ -202,3 +202,13 @@ a {
 textarea[name=descr] {
 	display:none;
 }
+
+#signOut {
+	padding-right: 14px;
+    display: inline;
+    float: right;
+}
+
+#signOut A {
+	color:#fff;
+}
