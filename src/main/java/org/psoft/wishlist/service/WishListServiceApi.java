@@ -83,7 +83,7 @@ public class WishListServiceApi {
 		String user = (String) session.getAttribute("user");
 		int updated = wishListDao.purchased(giftId, user);
 		if (updated == 0) {
-			throw new RuntimeException("Update failed",e);
+			throw new RuntimeException("Update failed");
 		}
 
 		Gift gift = wishListDao.find(giftId);
