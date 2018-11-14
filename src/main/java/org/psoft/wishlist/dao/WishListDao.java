@@ -1,20 +1,27 @@
 package org.psoft.wishlist.dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.psoft.wishlist.dao.data.Gift;
+import org.psoft.wishlist.dao.data.Invitation;
+import org.psoft.wishlist.dao.data.Registry;
+import org.psoft.wishlist.dao.data.RegistryItem;
+import org.psoft.wishlist.util.TokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,176 +31,173 @@ public class WishListDao {
 	@Autowired
 	DataSource dataSource;
 
-	public int purchased(int giftId, String purchasedBy) {
-		Connection connection = null;
+	JdbcTemplate jdbcTemplate;
+	
+	SimpleJdbcInsert jdbcRegistryInsert;
+	
+	SimpleJdbcInsert jdbcRegistryItemsInsert;
+
+	SimpleJdbcInsert jdbcInvitationInsert;
+	
+ 	InvitationRowMapper invitationRowMapper = new InvitationRowMapper();
+	
+	RegistryItemRowMapper registryItemRowMapper = new RegistryItemRowMapper();
+
+	RegistryRowMapper registryRowMapper = new RegistryRowMapper();
+
+	public WishListDao() {
+	}
+	
+	@PostConstruct
+	public void  init() {
+		jdbcTemplate = new JdbcTemplate(dataSource);
+		
+		jdbcRegistryInsert = new SimpleJdbcInsert(jdbcTemplate);
+		jdbcRegistryInsert.withTableName("REGISTRY").usingGeneratedKeyColumns("ID");
+		
+		jdbcRegistryItemsInsert = new SimpleJdbcInsert(jdbcTemplate);
+		jdbcRegistryItemsInsert.withTableName("REGISTRY_ITEMS").usingGeneratedKeyColumns("ID");
+		
+		jdbcInvitationInsert = new SimpleJdbcInsert(jdbcTemplate);
+		jdbcInvitationInsert.withTableName("REGISTRY_INVITATION").usingGeneratedKeyColumns("ID");
+
+	}
+	
+	public Registry createRegistry(String name, int ownerId) {
+        String token = TokenGenerator.createToken(10);
+
+		Map<String, Object> parameters = new HashMap<>();
+        parameters.put("NAME", name);
+        parameters.put("OWNER_ID", ownerId);
+        parameters.put("TOKEN", token);
+
+        Number key = jdbcRegistryInsert.executeAndReturnKey(new MapSqlParameterSource(parameters));
+		return registry(key.intValue());
+	}
+
+	public Registry registry(int registryId) {
+		Registry registry = jdbcTemplate.queryForObject("select * from REGISTRY where ID=?", 
+				new Object[] { registryId}, registryRowMapper);
+		return registry;
+	}
+
+	public Registry registry(String token) {
 		try {
-			connection = dataSource.getConnection();
-			PreparedStatement statement = connection.prepareStatement("update GIFT set IS_PURCHASED = !IS_PURCHASED, "
-					+ "PURCHASED_BY=? where GIFT_ID=? AND INITIALS<>?");
-			statement.setString(1, purchasedBy);
-			statement.setInt(2, giftId);
-			statement.setString(3, purchasedBy);
-			return statement.executeUpdate();
-		} catch (Exception e) {
-			String msg = "Unable to mark gift " + giftId + " as purchased";
-			log.error(msg, e);
-			throw new RuntimeException(msg, e);
-		} finally {
-			try {
-				connection.close();
-			} catch (Exception e) {
-				log.error("Failed to close connection", e);
-			}
+			Registry registry = jdbcTemplate.queryForObject("select * from REGISTRY where TOKEN=?", 
+					new Object[] { token}, registryRowMapper);
+			return registry;
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
+
+	public Invitation createInvitation(int registryId, int invitedUserId) {
+        String token = TokenGenerator.createToken(25);
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("REGISTRY_ID", registryId);
+        parameters.put("INVITED_USER_ID", invitedUserId);
+		parameters.put("TOKEN", token);
+        
+        Number key = jdbcInvitationInsert.executeAndReturnKey(new MapSqlParameterSource(parameters));
+        return new Invitation(key.intValue(), registryId, invitedUserId, token);
+	}
+
+	public Invitation invitation(int registryId, int invitedUserId) {
+		try {
+			Invitation invitation = jdbcTemplate.queryForObject("select * from REGISTRY_INVITATION where REGISTRY_ID=? AND INVITED_USER_ID=?", 
+					new Object[] { registryId, invitedUserId}, invitationRowMapper);
+			return invitation;
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
+
+	public Invitation invitation(String token) {
+		try {
+			Invitation invitation = jdbcTemplate.queryForObject("select * from REGISTRY_INVITATION where TOKEN=?", 
+					new Object[] { token }, invitationRowMapper);
+			return invitation;
+		} catch (EmptyResultDataAccessException e) {
+			return null;
 		}
 	}
 	
+	public Registry defaultRegistry(int userId) {
+		Registry registry  = jdbcTemplate.queryForObject("select * from REGISTRY where OWNER_ID=? AND IS_DEFAULT=1 ORDER BY ID asc", 
+				new Object[] { userId }, registryRowMapper);
+		return registry;
+	}
 
-	public List<Gift> fetch(String name) {
-		List<Gift> wishList = new ArrayList<Gift>();
-		
-		Connection connection = null;
-		try {
-			connection = dataSource.getConnection();
-			PreparedStatement statement = connection.prepareStatement("select * from GIFT where INITIALS=? ORDER BY GIFT_ID asc");
-			statement.setString(1, name);
-			ResultSet results = statement.executeQuery();
-			while(results.next()){
-				wishList.add(toGift(results));
-			}
-		} catch (Exception e) {
-			String msg = "Unable to fetch wish list for " + name;
-			log.error(msg, e);
-			throw new RuntimeException(msg, e);
-		} finally {
-			try {
-				connection.close();
-			} catch (SQLException e) {
-				log.error("Failed to close connection", e);
-			}
-		}
-
+	public List<RegistryItem> registryItems(int registryId) {
+		List<RegistryItem> wishList  = jdbcTemplate.query("select * from REGISTRY_ITEMS where REGISTRY_ID=? ORDER BY ID asc", 
+				new Object[] { registryId }, registryItemRowMapper);
 		return wishList;
 	}
 
-	public Gift find(long giftId) {
-		List<Gift> wishList = new ArrayList<Gift>();
-		
-		Connection connection = null;
-		try {
-			connection = dataSource.getConnection();
-			PreparedStatement statement = connection.prepareStatement("select * from GIFT where GIFT_ID=?");
-			statement.setLong(1, giftId);
-			ResultSet results = statement.executeQuery();
-			while(results.next()){
-				wishList.add(toGift(results));
-			}
-		} catch (Exception e) {
-			String msg = "Unable to fetch gift " + giftId;
-			log.error(msg, e);
-			throw new RuntimeException(msg, e);
-		} finally {
-			try {
-				connection.close();
-			} catch (SQLException e) {
-				log.error("Failed to close connection", e);
-			}
-		}
-		
-		if (wishList.isEmpty())
-			return null;
-		
-		return wishList.get(0);
+	public RegistryItem registryItem(long giftId) {
+		RegistryItem registryItem  = jdbcTemplate.queryForObject("select * from REGISTRY_ITEMS where  ID=?", 
+				new Object[] { giftId }, registryItemRowMapper);
+		return registryItem;
 	}
 	
-	public Gift save(Gift gift) {
-		if (gift.getGiftId()>0)
-			return update(gift);
-		else
-			return insert(gift);
+	public RegistryItem createRegsitryItem(int registryId, int userId, RegistryItem gift) {
+		Map<String, Object> parameters = new HashMap<>();
+        parameters.put("REGISTRY_ID", registryId);
+        parameters.put("OWNER_ID", registryId);
+        parameters.put("DESCR", gift.getDescr());
+        parameters.put("IS_SECRET", gift.isSecret());
+        parameters.put("URL", gift.getUrl());
+
+        Number key = jdbcRegistryItemsInsert.executeAndReturnKey(new MapSqlParameterSource(parameters));
+		
+		return registryItem(key.intValue());
+	}
+
+	public RegistryItem updateRegistryItem(int registryId, int userId, RegistryItem gift) {
+		jdbcTemplate.update("update REGISTRY_ITEMS set DESCR=?, URL=? where ID=? and OWNER_ID=?", 
+				gift.getDescr(), gift.getUrl(), gift.getId(), userId);
+		
+		return registryItem(gift.getId());
+	}
+
+	public void purchasedRegistryItem(int giftId, String purchasedByUserId) {
+		jdbcTemplate.update("update REGISTRY_ITEMS set IS_PURCHASED = !IS_PURCHASED, PURCHASED_BY=? where ID=?",  
+				purchasedByUserId, giftId);
 	}
 	
-	private Gift insert(Gift gift) {
-		Connection connection = null;
-		
-		if (StringUtils.isBlank(gift.getTitle()) ||
-				StringUtils.isBlank(gift.getInitials())){
-			throw new RuntimeException("Incomplete gift data");
-		}
+	public class RegistryRowMapper implements RowMapper<Registry> {
 
-		try {
-			connection = dataSource.getConnection();
-			PreparedStatement statement = connection.prepareStatement("insert into GIFT (GIFT, DESCR,"
-					+ "INITIALS, IS_SECRET, URL) values (?, ?, ?, ?, ?)",
-					Statement.RETURN_GENERATED_KEYS);
-			statement.setString(1, gift.getTitle());
-			statement.setString(2, gift.getDescr());
-			statement.setString(3, gift.getInitials());
-			statement.setBoolean(4, gift.isSecret());
-			statement.setString(5, gift.getUrl());
-			statement.executeUpdate();
-			
-			ResultSet tableKeys = statement.getGeneratedKeys();
-			tableKeys.next();
-			gift.setGiftId(tableKeys.getInt(1));
-			
-			return gift;
-			
-		} catch (Exception e) {
-			String msg = "Unable to save gift " + gift.getTitle();
-			log.error(msg, e);
-			throw new RuntimeException(msg, e);
-		} finally {
-			try {
-				connection.close();
-			} catch (Exception e) {
-				log.error("Failed to close connection", e);
-			}
+		@Override
+	    public Registry mapRow(ResultSet results, int rowNum) throws SQLException {
+			Registry registry = new Registry(results.getInt("ID"), results.getInt("OWNER_ID"), results.getString("TOKEN"));
+			registry.setName(results.getString("NAME"));
+			return registry;
 		}
 	}
+	
+	public class RegistryItemRowMapper implements RowMapper<RegistryItem> {
 
-	private Gift update(Gift gift) {
-		Connection connection = null;
-		
-		if (StringUtils.isBlank(gift.getTitle()) ||
-				gift.getGiftId() <1){
-			throw new RuntimeException("Incomplete gift data");
-		}
-		
-		try {
-			connection = dataSource.getConnection();
-			PreparedStatement statement = connection.prepareStatement("update GIFT set GIFT=?, DESCR=?, "
-					+ "URL=? where GIFT_ID=?");
-			statement.setString(1, gift.getTitle());
-			statement.setString(2, gift.getDescr());
-			statement.setString(3, gift.getUrl());
-			statement.setInt(4, gift.getGiftId());
-			statement.executeUpdate();
-			
-			return gift;
-		} catch (Exception e) {
-			String msg = "Unable to save gift " + gift.getTitle();
-			log.error(msg, e);
-			throw new RuntimeException(msg, e);
-		} finally {
-			try {
-				connection.close();
-			} catch (Exception e) {
-				log.error("Failed to close connection", e);
-			}
+		@Override
+	    public RegistryItem mapRow(ResultSet results, int rowNum) throws SQLException {
+			RegistryItem registryItem = new RegistryItem(results.getInt("ID"), results.getInt("OWNER_ID"), results.getInt("REGISTRY_ID"));
+			registryItem.setDescr(results.getString("DESCR"));
+			registryItem.setUrl(results.getString("URL"));
+			registryItem.setSecret(results.getBoolean("IS_SECRET"));
+			registryItem.setPurchased(results.getBoolean("IS_PURCHASED"));
+			registryItem.setPurchasedBy(results.getString("PURCHASED_BY"));
+			return registryItem;
 		}
 	}
+	
+	public class InvitationRowMapper implements RowMapper<Invitation> {
 
-	private Gift toGift(ResultSet results) throws SQLException {
-		Gift gift = new Gift();
-		gift.setGiftId(results.getInt("GIFT_ID"));
-		gift.setTitle(results.getString("GIFT"));
-		gift.setDescr(results.getString("DESCR"));
-		gift.setInitials(results.getString("INITIALS"));
-		gift.setSecret(results.getBoolean("IS_SECRET"));
-		gift.setPurchased(results.getBoolean("IS_PURCHASED"));
-		gift.setPurchasedBy(results.getString("PURCHASED_BY"));
-		gift.setUrl(results.getString("URL"));
-		return gift;
+		@Override
+	    public Invitation mapRow(ResultSet rs, int rowNum) throws SQLException {
+			Invitation invitation = new Invitation(rs.getInt("ID"), rs.getInt("REGISTRY_ID"), rs.getInt("INVITED_USER_ID"),
+					rs.getString("TOKEN"));
+	        return invitation;
+	    }
 	}
 
 }

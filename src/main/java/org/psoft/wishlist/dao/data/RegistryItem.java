@@ -2,42 +2,38 @@ package org.psoft.wishlist.dao.data;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class Gift {
+public class RegistryItem {
 
-	private int giftId;
+	final int id;
 
-	private String title;
+	final int ownerId; 
+	
+	final int registryId;
+	
+	String url;
 
-	private String url;
+	String descr;
 
-	private String descr;
+	boolean purchased;
 
-	private boolean purchased;
+	String purchasedBy;
 
-	private String purchasedBy;
+	boolean secret;
 
-	private String initials;
-
-	private boolean secret;
-
-	public int getGiftId() {
-		return giftId;
+	public RegistryItem(int id, int ownerId, int registryId) {
+		this.id = id;
+		this.ownerId = ownerId;
+		this.registryId = registryId;
 	}
-
-	public void setGiftId(int v) {
-
-		if (this.giftId != v) {
-			this.giftId = v;
-		}
-
+	
+	public RegistryItem() {
+		this.id = -1;
+		this.ownerId = -1;
+		this.registryId = -1;
 	}
-
-	public String getTitle() {
-		return StringUtils.trimToNull(title);
-	}
-
-	public void setTitle(String v) {
-		this.title = v;
+	
+	public int getId() {
+		return id;
 	}
 
 	public String getUrl() {
@@ -72,14 +68,6 @@ public class Gift {
 		this.purchasedBy = v;
 	}
 
-	public String getInitials() {
-		return initials;
-	}
-
-	public void setInitials(String v) {
-		this.initials = v;
-	}
-
 	public boolean isSecret() {
 		return secret;
 	}
@@ -88,4 +76,11 @@ public class Gift {
 		this.secret = v;
 	}
 
+	public int getRegistryId() {
+		return registryId;
+	}
+
+	public int getOwnerId() {
+		return ownerId;
+	}
 }

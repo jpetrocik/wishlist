@@ -2,30 +2,38 @@ package org.psoft.wishlist.dao.data;
 
 public class WishlistUser {
 
-	String initials;
+	final int id;
 	
-	String email;
+	final String email;
 
-	public WishlistUser(String initials, String email) {
-		this.initials = initials;
+	String name;
+	
+	public WishlistUser(String name, String email) {
+		this.id = -1;
+		this.name = name;
 		this.email = email;
 	}
 
-	public String getInitials() {
-		return initials;
-	}
-
-	public void setInitials(String initials) {
-		this.initials = initials;
+	public WishlistUser(int id, String name, String email) {
+		this.id = id;
+		this.name = name;
+		this.email = email;
 	}
 
 	public String getEmail() {
 		return email;
 	}
 
-	public void setEmail(String email) {
-		this.email = email;
+	public int getId() {
+		return id;
 	}
-	
-	
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
 }

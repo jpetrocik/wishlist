@@ -11,10 +11,17 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.xml.ws.http.HTTPBinding;
 
 import org.apache.commons.lang3.StringUtils;
+import org.psoft.wishlist.dao.UserDao;
+import org.psoft.wishlist.dao.data.WishlistUser;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class LoginFilter implements Filter {
+
+	@Autowired
+	UserDao userDao;
 
 	public void destroy() {
 	}
@@ -27,46 +34,53 @@ public class LoginFilter implements Filter {
 	     String path = request.getServletPath();
 
 	    //unsecured assets
-	    if (StringUtils.startsWith(path, "/login.html") || StringUtils.startsWith(path, "/images") || StringUtils.endsWith(path, "css")) {
+	    if ( StringUtils.startsWith(path, "/api/invitation/") || 
+	    		StringUtils.startsWith(path, "/api/start") || 
+	    		StringUtils.startsWith(path, "/api/register")) {
 		    filterChain.doFilter(_request, _response);
-
-		//signout
+		    return;
+		    
+		//signouts
 	    } else if (StringUtils.startsWith(path, "/signout")) {
 			session.removeAttribute("user");
-		    response.sendRedirect("/login.html");
+			response.setStatus(200);
 		    return;
-
+		    
 		//signin
-	    } else if (StringUtils.startsWith(path, "/signin")) {
+	    } else if (StringUtils.startsWith(path, "/api/signin") ) {
+			String email = request.getParameter("email");
+			String token = request.getParameter("token");
 
-			//check password
-			String password = request.getParameter("password");
-			if (!"2018".equals(StringUtils.trim(password))) {
-			    response.sendRedirect("/login.html");
-			    return;
-			}
-
-			//set user or redirect to login
-			String user = request.getParameter("userId");
-			if (StringUtils.isNotBlank(user)){
-				session.setAttribute("user", StringUtils.upperCase(user));
-				response.sendRedirect("/wishlist.html");
-			} else {
-				response.sendRedirect("/login.html");
+			try {
+				String authorizationToken = userDao.validateUser(email, token);
+				WishlistUser wishlistUser = userDao.validateAuthtoken(authorizationToken);
+		    	session.setAttribute("user", wishlistUser);
+				response.addHeader("auth-token", authorizationToken);
+				response.setStatus(200);
 				return;
+			} catch (Exception e){
+		    	response.sendError(403, "Unauthorized");
+		    	return;
 			}
-
-		//confirmed logged in and continue
-		} else {
-
-	    	String user = (String) session.getAttribute("user");
-		    if (StringUtils.isBlank(user)){
-		        response.sendRedirect("/login.html");
+			
+	    }
+	    
+	    if ( session.getAttribute("user") == null ) {
+			String authorizationToken = request.getHeader("auth-token");
+		    if (authorizationToken == null){
+		    	response.sendError(403, "Unauthorized");
 		        return;
-			}
-		     
-		     filterChain.doFilter(_request, _response);
-	     }
+		    }
+		    
+			WishlistUser wishlistUser = userDao.validateAuthtoken(authorizationToken);
+		    if (wishlistUser == null){
+		    	response.sendError(403, "Unauthorized");
+		        return;
+		    }
+	    	session.setAttribute("user", wishlistUser);
+	    }
+	    
+		filterChain.doFilter(_request, _response);
 	}
 
 	public void init(FilterConfig arg0) throws ServletException {

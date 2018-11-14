@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.psoft.wishlist.dao.UserDao;
+import org.psoft.wishlist.dao.data.RegistryItem;
 import org.psoft.wishlist.dao.data.WishlistUser;
 import org.psoft.wishlist.service.events.GiftAddEvent;
 import org.psoft.wishlist.service.events.GiftPurchasedEvent;
@@ -31,6 +32,9 @@ public class NotificationService {
 	
 	@Autowired
 	UserDao userDao;
+	
+	@Autowired
+	RegistryService wishListService;
 	
 	@Autowired
 	EmailerService emailer;
@@ -66,8 +70,9 @@ public class NotificationService {
 			if (StringUtils.isBlank(user.getEmail()))
 				continue;
 			
-			List<GiftPurchasedEvent> purchasedEvents = purchasedGifts.stream().filter(f-> !f.gift.getInitials().equals(user.getInitials())).collect(Collectors.toList());
-			List<GiftAddEvent> addEvents = addedGifts.stream().filter(f-> !f.gift.getInitials().equals(user.getInitials())).collect(Collectors.toList());
+			RegistryItem gift = null;
+			List<GiftPurchasedEvent> purchasedEvents = purchasedGifts.stream().filter(f-> !(gift.getOwnerId() == user.getId())).collect(Collectors.toList());
+			List<GiftAddEvent> addEvents = addedGifts.stream().filter(f-> !(gift.getId() == user.getId())).collect(Collectors.toList());
 			if (addEvents.isEmpty() && purchasedEvents.isEmpty()) {
 				continue;
 			}
