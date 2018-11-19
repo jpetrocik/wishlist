@@ -89,7 +89,7 @@ public class RegistryService {
 		
 		String authorizationToken = userDao.generateUserAuthToken(invitedUser.getId());
 		sendInvitationEmail(email, token + " Wish List Invitation", 
-				"Use this link to access the " + token + " wish list.\n\nhttp://petrocik.net/registry/" + token + "?authorizationToken=" + authorizationToken);
+				"Use this link to access the " + token + " wish list.\n\nhttp://gifts.petrocik.net/#/" + token + "?authorizationToken=" + authorizationToken);
 	}
 
 	public Invitation createInvitation(int registryId, int userId) {
@@ -216,7 +216,7 @@ public class RegistryService {
 		WishlistUser wishListUser = userDao.findByEmail(email);
 		String authorizationToken = userDao.generateUserAuthToken(wishListUser.getId());
 		sendInvitationEmail(email, token + " Wish List Invitation", 
-				"Use this link to access the " + token + " wish list.\n\nhttp://petrocik.net/#/registry/" + token + "?authorizationToken=" + authorizationToken);
+				"Use this link to access the " + token + " wish list.\n\nhttp://gifts.petrocik.net/#/" + token + "?authorizationToken=" + authorizationToken);
 		
 	}
 
