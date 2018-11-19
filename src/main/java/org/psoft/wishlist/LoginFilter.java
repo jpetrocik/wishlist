@@ -1,6 +1,8 @@
 package org.psoft.wishlist;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Optional;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -8,10 +10,10 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.xml.ws.http.HTTPBinding;
 
 import org.apache.commons.lang3.StringUtils;
 import org.psoft.wishlist.dao.UserDao;
@@ -36,7 +38,9 @@ public class LoginFilter implements Filter {
 	    //unsecured assets
 	    if ( StringUtils.startsWith(path, "/api/invitation/") || 
 	    		StringUtils.startsWith(path, "/api/start") || 
-	    		StringUtils.startsWith(path, "/api/register")) {
+	    		StringUtils.startsWith(path, "/api/register") ||
+	    		StringUtils.startsWith(path, "/api/resend/invitation")) {
+	    	
 		    filterChain.doFilter(_request, _response);
 		    return;
 		    
@@ -45,29 +49,56 @@ public class LoginFilter implements Filter {
 			session.removeAttribute("user");
 			response.setStatus(200);
 		    return;
-		    
-		//signin
-	    } else if (StringUtils.startsWith(path, "/api/signin") ) {
-			String email = request.getParameter("email");
-			String token = request.getParameter("token");
-
-			try {
-				String authorizationToken = userDao.validateUser(email, token);
-				WishlistUser wishlistUser = userDao.validateAuthtoken(authorizationToken);
-		    	session.setAttribute("user", wishlistUser);
-				response.addHeader("auth-token", authorizationToken);
-				response.setStatus(200);
-				return;
-			} catch (Exception e){
-		    	response.sendError(403, "Unauthorized");
-		    	return;
-			}
-			
 	    }
 	    
-	    if ( session.getAttribute("user") == null ) {
-			String authorizationToken = request.getHeader("auth-token");
+    	//user invitation login, check for user/token in params
+	    //always login if provided
+		String email = request.getParameter("email");
+		String token = request.getParameter("token");
+		if (email != null && token != null) {
+			String authorizationToken = userDao.validateUser(email, token);
 		    if (authorizationToken == null){
+		    	response.sendError(403, "Unauthorized");
+		        return;
+		    }
+		    
+		    //return auth cookie for later remeber me
+		    Cookie authCookie = new Cookie("user-token", authorizationToken);
+		    authCookie.setPath("/");
+		    authCookie.setMaxAge(180 * 24 * 60 * 60);
+		    response.addCookie(authCookie);
+		    
+			WishlistUser wishlistUser = userDao.validateAuthtoken(authorizationToken);
+	    	session.setAttribute("user", wishlistUser);
+		}
+
+		String authToken = request.getParameter("authorizationToken");
+		if (authToken != null) {
+			WishlistUser wishlistUser = userDao.validateAuthtoken(authToken);
+		    if (wishlistUser == null){
+		    	response.sendError(403, "Unauthorized");
+		        return;
+		    }
+		    
+		    //return auth cookie for later remeber me
+		    Cookie authCookie = new Cookie("user-token", authToken);
+		    authCookie.setPath("/");
+		    authCookie.setMaxAge(180 * 24 * 60 * 60);
+		    response.addCookie(authCookie);
+		    
+	    	session.setAttribute("user", wishlistUser);
+			
+		}
+		
+	    if ( session.getAttribute("user") == null ) {
+	    	
+			//check cookie auth
+			String authorizationToken = checkAuthCookie(request.getCookies());
+			if (StringUtils.isBlank(authorizationToken)) {
+				authorizationToken = request.getHeader("auth-token");
+			}
+			
+		    if (StringUtils.isBlank(authorizationToken)){
 		    	response.sendError(403, "Unauthorized");
 		        return;
 		    }
@@ -81,6 +112,18 @@ public class LoginFilter implements Filter {
 	    }
 	    
 		filterChain.doFilter(_request, _response);
+	}
+
+	private String checkAuthCookie(Cookie[] cookies) {
+		if (cookies == null)
+			return null;
+		
+		Optional<Cookie> userTokenCookie = Arrays.stream(cookies).filter(c -> c.getName().equals("user-token")).findFirst();
+		if (!userTokenCookie.isPresent()) {
+			return null;
+		}
+
+		return userTokenCookie.get().getValue();
 	}
 
 	public void init(FilterConfig arg0) throws ServletException {

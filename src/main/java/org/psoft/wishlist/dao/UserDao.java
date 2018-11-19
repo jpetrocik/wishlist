@@ -30,24 +30,11 @@ public class UserDao {
 
 	JdbcTemplate jdbcTemplate;
 
-	Map<String, WishlistUser> allUsers = new HashMap<>();
-
 	WishlistUserRowMapper wishlistUserRowMapper = new WishlistUserRowMapper();
 
 	SimpleJdbcInsert jdbcWishListUserInsert;
 	
 	public UserDao() {
-		addUser(new WishlistUser("JMP", "john@petrocik.net"));
-		addUser(new WishlistUser("NTP", "nanelle@petrocik.net"));
-		addUser(new WishlistUser("MKP", "marhiyana@petrocik.net"));
-		addUser(new WishlistUser("CDP", "cadel@petrocik.net"));
-		addUser(new WishlistUser("JRP", "jrp@petrocik.net"));
-		addUser(new WishlistUser("MAP", "map@petrocik.net"));
-		addUser(new WishlistUser("EXF", "exferrara@gmail.com"));
-		addUser(new WishlistUser("SLF", null));
-		addUser(new WishlistUser("JSF", null));
-		addUser(new WishlistUser("MEF", null));
-		addUser(new WishlistUser("MLG", null));
 	}
 	
 	@PostConstruct
@@ -59,10 +46,6 @@ public class UserDao {
 
 	}
 
-	private void addUser(WishlistUser wishlistUser) {
-		allUsers.put(wishlistUser.getName(), wishlistUser);
-	}
-	
 	public WishlistUser findByEmail(String email){
 		try {
 			return jdbcTemplate.queryForObject(
@@ -84,7 +67,8 @@ public class UserDao {
 	}
 
 	public Collection<WishlistUser> findAll(){
-		return allUsers.values();
+		return jdbcTemplate.query(
+			    "select * from WISHLIST_USER", wishlistUserRowMapper);
 	}
 	
 	public WishlistUser register(String email, String name){
@@ -114,14 +98,14 @@ public class UserDao {
 			    new Object[] { email, token }, String.class);
 	}
 	
-	public String generateUserToken(int id) {
+	public String generateUserAuthToken(int id) {
 		return jdbcTemplate.queryForObject(
-			    "select EMAIL, TOKEN from WISHLIST_USER where ID=?", 
+			    "select AUTHORIZATION_TOKEN from WISHLIST_USER where ID=?", 
 			    new Object[] { id }, new RowMapper<String>() {
 
 					@Override
 					public String mapRow(ResultSet rs, int rowNum) throws SQLException {
-						return "email=" + rs.getString("EMAIL") + "&token=" + rs.getString("TOKEN");
+						return rs.getString("AUTHORIZATION_TOKEN");
 					}
 			    	
 			    });

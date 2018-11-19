@@ -10,11 +10,11 @@ import org.apache.commons.dbcp.BasicDataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
+import com.authy.AuthyApiClient;
 import com.google.common.eventbus.EventBus;
 
 @SpringBootApplication
@@ -72,6 +72,12 @@ public class Application {
 	public Filter loginFilter() {
 		return new LoginFilter();
 	}
+	
+//	@Bean
+//	public AuthyApiClient AuthyApiClient() {
+//		return new AuthyApiClient("JmZmpoPYbkbHttcYuPiUTAVBfrbP9t4y", "https://api.authy.com/");
+//		
+//	}
 	
     public static void main(String[] args) {
         ApplicationContext ctx = SpringApplication.run(Application.class, args);

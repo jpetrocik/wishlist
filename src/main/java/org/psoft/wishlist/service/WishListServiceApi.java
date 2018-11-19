@@ -1,6 +1,9 @@
 package org.psoft.wishlist.service;
 
+import java.net.URL;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpSession;
@@ -9,6 +12,8 @@ import org.psoft.wishlist.dao.data.Invitation;
 import org.psoft.wishlist.dao.data.Registry;
 import org.psoft.wishlist.dao.data.RegistryItem;
 import org.psoft.wishlist.dao.data.WishlistUser;
+import org.psoft.wishlist.service.events.GiftAddEvent;
+import org.psoft.wishlist.service.events.GiftPurchasedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +24,19 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.common.eventbus.EventBus;
+
 @RestController
 public class WishListServiceApi {
 	
 	@Autowired
 	RegistryService wishListService;
+	
+	@Autowired
+	ScraperService scraperService;
+	
+	@Autowired
+	EventBus eventBus;
 	
 	@RequestMapping(path="/api/register", method=RequestMethod.POST)
 	public WishlistUser register(@RequestParam String email, @RequestParam String name, HttpSession session){
@@ -37,12 +50,53 @@ public class WishListServiceApi {
 	public Invitation startRegistry(@RequestParam String email, HttpSession session){
 		return wishListService.startNewRegistry(email);
 	}
+	
+	@RequestMapping(path="/api/registry/default", method=RequestMethod.GET)
+	public ResponseEntity<Registry> defaultUserRegsiter(HttpSession session){
+		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
+
+		Registry registry = wishListService.findDefaultRegistery(wishlistUser.getId());
+		return ResponseEntity.ok(registry);
+	}
+
+	/**
+	 * Get registry
+	 */
+	@RequestMapping(path="/api/registry/{token}", method=RequestMethod.GET)
+	public ResponseEntity<Registry> registry(@PathVariable String token, HttpSession session){
+		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
+
+		Registry registry = wishListService.registry(token);
+		if (registry == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+		}
+
+		boolean invitationExists = wishListService.hasInvitation(registry.getId(), wishlistUser.getId());
+		if (!invitationExists) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+
+		return ResponseEntity.ok(registry);
+	}
 
 	@RequestMapping(path="/api/registry", method=RequestMethod.POST)
 	public Invitation createRegsitry(@RequestParam String name, HttpSession session){
 		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
 
 		return wishListService.createRegistry(wishlistUser.getId(), name);
+	}
+
+	@RequestMapping(path="/api/registry/{registryId}", method=RequestMethod.PUT)
+	public ResponseEntity<Registry> updateRegsitry(@PathVariable int registryId, @RequestBody Registry registry, HttpSession session){
+		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
+
+		boolean isOwner = wishListService.isOwner(wishlistUser.getId(), registryId);
+		if (!isOwner) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+
+		registry = wishListService.updateRegistry(wishlistUser.getId(), registryId, registry);
+		return ResponseEntity.ok(registry);
 	}
 
 	@RequestMapping(path="/api/invitation", method=RequestMethod.POST)
@@ -73,34 +127,15 @@ public class WishListServiceApi {
 		
 		return ResponseEntity.ok(registry);
 	}
+	
+	@RequestMapping(path="/api/resend/invitation", method=RequestMethod.GET)
+	public ResponseEntity<Void> resendInvitation(@RequestParam String email, @RequestParam String token, HttpSession session){
 
-	@RequestMapping(path="/api/user/registry/default", method=RequestMethod.GET)
-	public ResponseEntity<Registry> defaultUserRegsiter(HttpSession session){
-		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
-
-		Registry registry = wishListService.findDefaultRegistery(wishlistUser.getId());
-		return ResponseEntity.ok(registry);
+		wishListService.resendInvitation(email, token);
+		
+		return ResponseEntity.ok().build();
 	}
-
-	/**
-	 * Get registry
-	 */
-	@RequestMapping(path="/api/registry/{token}", method=RequestMethod.GET)
-	public ResponseEntity<Registry> registry(@PathVariable String token, HttpSession session){
-		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
-
-		Registry registry = wishListService.registry(token);
-		if (registry == null) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-		}
-
-		boolean invitationExists = wishListService.hasInvitation(registry.getId(), wishlistUser.getId());
-		if (!invitationExists) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
-		}
-
-		return ResponseEntity.ok(registry);
-	}
+	
 
 	/**
 	 * Get registry items
@@ -119,8 +154,8 @@ public class WishListServiceApi {
 		//filter secret gifts from owner
 		boolean isOwner = wishListService.isOwner(registryId, wishlistUser.getId());
 		if (isOwner) {
-			List<RegistryItem> wishList = wishlistItem.stream().filter(g -> !g.isSecret()).collect(Collectors.toList());
-			wishList.forEach(g -> g.setPurchased(false));
+			wishlistItem = wishlistItem.stream().filter(g -> !g.isSecret()).collect(Collectors.toList());
+			wishlistItem.forEach(g -> g.setPurchased(false));
 		}
 		
 		return ResponseEntity.ok(wishlistItem);
@@ -140,7 +175,27 @@ public class WishListServiceApi {
 		
 		registryItem = wishListService.addRegistryItem(registryId, wishlistUser.getId(), registryItem);
 
+		GiftAddEvent event = new GiftAddEvent();
+		event.who = wishlistUser.getName();
+		event.registryId = registryId;
+		event.giftId = registryItem.getId();
+		eventBus.post(event);
+
 		return ResponseEntity.ok(registryItem);
+	}
+
+	@RequestMapping(path="/api/url", method=RequestMethod.POST)
+	public ResponseEntity<Map<String,String>> fetchMetadataInformation(@RequestParam String pageUrl, HttpSession session){
+
+		URL url;
+		try {
+			url = new URL(pageUrl);
+		} catch (Exception e) {
+			return ResponseEntity.status(401).body(null);
+		}
+		
+		Map<String, String> metadata = scraperService.downloadPage(url);
+		return ResponseEntity.ok(metadata);
 	}
 
 	/**
@@ -155,7 +210,7 @@ public class WishListServiceApi {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
 
-		wishListService.updateRegistryItem(registryId, wishlistUser.getId(), registryItem);
+		wishListService.updateRegistryItem(wishlistUser.getId(), giftId, registryItem);
 		
 //		GiftAddEvent event = new GiftAddEvent();
 //		event.who = wishlistUser.getName();
@@ -166,39 +221,86 @@ public class WishListServiceApi {
 		
 	}
 
-	/**
-	 * Delete registry item
-	 */
-	@RequestMapping(path="/api/registry/{registryId}/item/{giftId}", method=RequestMethod.DELETE)
-	public RegistryItem deleteRegistryItem(@PathVariable int registryId, @PathVariable int giftId, HttpSession session){
-		throw new UnsupportedOperationException("Not yet implemented");
+	@RequestMapping(path="/api/group/{token}", method=RequestMethod.POST)
+	public ResponseEntity<String> createGroup(@PathVariable String token, @RequestParam String[] email, HttpSession session){
+		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
+
+		String groupToken = wishListService.createGroup(token, wishlistUser.getId(), email);
+		return ResponseEntity.ok(groupToken);
+	}
+	@RequestMapping(path="/api/group/invitation/{token}", method=RequestMethod.POST)
+	public ResponseEntity<Void> sendGroupInvitation(@PathVariable String token, @RequestParam String email, HttpSession session){
+		wishListService.sendGroupInvitation(token, email);
+		return ResponseEntity.ok().build();
+	}
+	
+	@RequestMapping(path="/api/group/{token}", method=RequestMethod.GET)
+	public ResponseEntity<List<Registry>> group(@PathVariable String token, HttpSession session){
+		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
+
+		List<Registry> groupRegistry = wishListService.groupRegistries(token);
+		if (groupRegistry == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+		}
+
+		Iterator<Registry> iterator = groupRegistry.iterator();
+		while (iterator.hasNext()) {
+			Registry registry = iterator.next();
+			boolean invitationExists = wishListService.hasInvitation(registry.getId(), wishlistUser.getId());
+			if (!invitationExists) {
+				iterator.remove();
+			}
+		}
 		
+		if (groupRegistry.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+		
+		return ResponseEntity.ok(groupRegistry);
 	}
 
-//	/**
-//	 * Mark gift as purchased
-//	 */
-//    @RequestMapping(path="/api/registry/{registryId}/item/{giftId}/purchased", method=RequestMethod.PUT)
-//    public ResponseEntity<RegistryItem> purchasedToggle(@PathVariable int registryId, @PathVariable Integer giftId, HttpSession session){
-//		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
-//
-//		boolean inventationDoesNotExists = isNull(wishListDao.invitation(registryId, wishlistUser.getId()));
-//		if (inventationDoesNotExists) {
-//			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
-//		}
-//
-//		wishListDao.purchasedRegistryItem(giftId, wishlistUser.getName());
-//
-//		RegistryItem gift = wishListDao.registryItem(giftId);
-//		
-//		if (gift.isPurchased()) {
-//			GiftPurchasedEvent event = new GiftPurchasedEvent();
-//			event.who = wishlistUser.getName();
-//			event.gift = gift;
-//			eventBus.post(event);
-//		}
-//		
-//        return ResponseEntity.ok(gift);
-//	}
+	@RequestMapping(path="/api/group/{token}/default", method=RequestMethod.GET)
+	public ResponseEntity<Registry> groupUserRegistery(@PathVariable String token, HttpSession session){
+		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
+
+		List<Registry> groupRegistry = wishListService.groupRegistries(token);
+		if (groupRegistry == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+		}
+
+		Iterator<Registry> iterator = groupRegistry.iterator();
+		while (iterator.hasNext()) {
+			Registry registry = iterator.next();
+			boolean isOwner = wishListService.isOwner(wishlistUser.getId(), registry.getId());
+			if (isOwner) {
+				return ResponseEntity.ok(registry);
+			}
+		}
+		
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+	}
+
+	/**
+	 * Mark gift as purchased
+	 */
+    @RequestMapping(path="/api/registry/{registryId}/item/{giftId}/purchased", method=RequestMethod.PUT)
+    public ResponseEntity<Void> purchasedToggle(@PathVariable int registryId, @PathVariable Integer giftId, HttpSession session){
+		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
+
+		boolean invitationExists = wishListService.hasInvitation(registryId, wishlistUser.getId());
+		if (!invitationExists) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+
+		wishListService.purchasedRegistryItem(giftId, wishlistUser.getName());
+
+		GiftPurchasedEvent event = new GiftPurchasedEvent();
+		event.who = wishlistUser.getName();
+		event.registryId = registryId;
+		event.giftId = giftId;
+		eventBus.post(event);
+
+        return ResponseEntity.ok().build();
+	}
     
 }

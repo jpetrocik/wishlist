@@ -1,5 +1,8 @@
 package org.psoft.wishlist.service.events;
 
+import org.psoft.wishlist.dao.data.Registry;
+import org.psoft.wishlist.dao.data.RegistryItem;
+
 
 public class GiftPurchasedEvent {
 
@@ -7,10 +10,14 @@ public class GiftPurchasedEvent {
 	
 	public int giftId;
 	
-	public int regsitryId;
+	public int registryId;
 
-//	public String toString() {
-//		return who + " purchased \"" + gift.getDescr() + "\" for " + gift.getUserId();
-//	}
+	public Registry registry;
+	
+	public RegistryItem registryItem;
+	
+	public String toMessage() {
+		return who + " purchased \"" + registryItem.getDescr() + "\" for " + registry.getOwnerId();
+	}
 
 }

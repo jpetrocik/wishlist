@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.psoft.wishlist.dao.UserDao;
+import org.psoft.wishlist.dao.data.Registry;
 import org.psoft.wishlist.dao.data.RegistryItem;
 import org.psoft.wishlist.dao.data.WishlistUser;
 import org.psoft.wishlist.service.events.GiftAddEvent;
@@ -65,14 +66,24 @@ public class NotificationService {
 	}
 
 	protected void sendEmail() {
+		
+		purchasedGifts.forEach( (e) -> {
+			e.registry = wishListService.registry(e.registryId);
+			e.registryItem = wishListService.registryItem(e.giftId);
+		});
+		
+		addedGifts.forEach( (e) -> {
+			e.registry = wishListService.registry(e.registryId);
+			e.registryItem = wishListService.registryItem(e.giftId);
+		});
+
 		for (WishlistUser user : userDao.findAll()) {
 			
 			if (StringUtils.isBlank(user.getEmail()))
 				continue;
 			
-			RegistryItem gift = null;
-			List<GiftPurchasedEvent> purchasedEvents = purchasedGifts.stream().filter(f-> !(gift.getOwnerId() == user.getId())).collect(Collectors.toList());
-			List<GiftAddEvent> addEvents = addedGifts.stream().filter(f-> !(gift.getId() == user.getId())).collect(Collectors.toList());
+			List<GiftPurchasedEvent> purchasedEvents = purchasedGifts.stream().filter(f-> !(f.registry.getOwnerId() == user.getId())).collect(Collectors.toList());
+			List<GiftAddEvent> addEvents = addedGifts.stream().filter(f-> !(f.registry.getOwnerId() == user.getId())).collect(Collectors.toList());
 			if (addEvents.isEmpty() && purchasedEvents.isEmpty()) {
 				continue;
 			}
@@ -81,7 +92,7 @@ public class NotificationService {
 			if (!purchasedEvents.isEmpty()) {
 				body.append("**************** Purchased Gifts ****************\n\n");
 				for (GiftPurchasedEvent e : purchasedEvents ) {
-					body.append(e.toString() + "\n\n");
+					body.append(e.toMessage() + "\n\n");
 				}
 			}
 			
@@ -90,7 +101,7 @@ public class NotificationService {
 					body.append("\n\n\n\n");
 				body.append("**************** Gift Additions ****************\n\n");
 				for (GiftAddEvent e : addEvents ) {
-					body.append(e.toString() + "\n\n");
+					body.append(e.toMessage() + "\n\n");
 				}
 			}
 

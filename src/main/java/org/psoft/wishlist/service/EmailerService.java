@@ -12,9 +12,14 @@ public class EmailerService {
 	boolean sendEmail;
 	
 	public void sendMail(String to, String from, String subject, String body) throws Exception{
-		if (!sendEmail)
+		if (!sendEmail) {
+			System.out.println("To: " + to);
+			System.out.println("From: " + from);
+			System.out.println("Subject: " + from);
+			System.out.println("");
+			System.out.println(body);
 			return;
-		
+		}
 		Process process = Runtime.getRuntime().exec(new String[] {"/usr/bin/mail",
 				"-a", from,
 				"-s", subject,

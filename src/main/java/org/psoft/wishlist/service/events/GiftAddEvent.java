@@ -1,6 +1,8 @@
 package org.psoft.wishlist.service.events;
 
+import org.psoft.wishlist.dao.data.Registry;
 import org.psoft.wishlist.dao.data.RegistryItem;
+
 
 public class GiftAddEvent {
 	
@@ -8,9 +10,13 @@ public class GiftAddEvent {
 	
 	public int giftId;
 
-	public int regsitryId;
+	public int registryId;
 
-//	public String toString() {
-//		return who + " added \"" + gift.getDescr() + "\"" + (gift.isSecret()?" for " + gift.getUserId():"");
-//	}
+	public Registry registry;
+	
+	public RegistryItem registryItem;
+	
+	public String toMessage() {
+		return who + " added \"" + registryItem.getDescr() + "\" " + (registryItem.isSecret()?" for " + registry.getName():"");
+	}
 }
