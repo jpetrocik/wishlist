@@ -81,17 +81,6 @@ public class RegistryService {
 		return createInvitation(registryId, invitedUser.getId());
 	}
 
-	public void sendGroupInvitation(String token, String email) {
-		WishlistUser invitedUser = userDao.findByEmail(email);
-		if (invitedUser == null) {
-			invitedUser = register(email, StringUtils.substringBefore(email, "@"));
-		}
-		
-		String authorizationToken = userDao.generateUserAuthToken(invitedUser.getId());
-		sendInvitationEmail(email, token + " Wish List Invitation", 
-				"Use this link to access the " + token + " wish list.\n\nhttp://gifts.petrocik.net/#/" + token + "?authorizationToken=" + authorizationToken);
-	}
-
 	public Invitation createInvitation(int registryId, int userId) {
 		
 		Invitation invitaiton = null;
@@ -178,7 +167,7 @@ public class RegistryService {
 			//add registry to group
 			wishListDao.createGroup(token, invitation.getRegistryId());
 
-			sendGroupInvitation(token, e);
+			sendInvitation(token, e);
 		}
 		
 		//Create invitation to the existing registry in the group and add
@@ -212,12 +201,27 @@ public class RegistryService {
 
 	public void resendInvitation(String email, String token) {
 		WishlistUser wishListUser = userDao.findByEmail(email);
-		String authorizationToken = userDao.generateUserAuthToken(wishListUser.getId());
-		sendInvitationEmail(email, token + " Wish List Invitation", 
-				"Use this link to access the " + token + " wish list.\n\nhttp://gifts.petrocik.net/#/" + token + "?authorizationToken=" + authorizationToken);
+		if (wishListUser == null)
+			return;
 		
+		internalSendInvitation(wishListUser, token);
+
 	}
 
+	public void sendInvitation(String email, String token) {
+		WishlistUser invitedUser = userDao.findByEmail(email);
+		if (invitedUser == null) {
+			invitedUser = register(email, StringUtils.substringBefore(email, "@"));
+		}
+		internalSendInvitation(invitedUser, token);
+	}
+
+	private void internalSendInvitation(WishlistUser invitedUser, String token) {
+		String authorizationToken = userDao.generateUserAuthToken(invitedUser.getId());
+		sendInvitationEmail(invitedUser.getEmail(), token + " Wish List Invitation", 
+			"Use this link to access the " + token + " Wish List.\n\nhttp://gifts.petrocik.net/#/" + token + "?authorizationToken=" + authorizationToken);
+	}
+	
 	public RegistryItem registryItem(int giftId) {
 		return wishListDao.registryItem(giftId);
 	}

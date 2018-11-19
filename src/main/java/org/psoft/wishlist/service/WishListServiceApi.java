@@ -228,9 +228,10 @@ public class WishListServiceApi {
 		String groupToken = wishListService.createGroup(token, wishlistUser.getId(), email);
 		return ResponseEntity.ok(groupToken);
 	}
+	
 	@RequestMapping(path="/api/group/invitation/{token}", method=RequestMethod.POST)
 	public ResponseEntity<Void> sendGroupInvitation(@PathVariable String token, @RequestParam String email, HttpSession session){
-		wishListService.sendGroupInvitation(token, email);
+		wishListService.sendInvitation(email, token);
 		return ResponseEntity.ok().build();
 	}
 	
