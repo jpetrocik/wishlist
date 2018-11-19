@@ -135,9 +135,7 @@ public class RegistryService {
 
 	public RegistryItem addRegistryItem(int registryId, int userId, RegistryItem registryItem) {
 		boolean isOwner = isOwner(registryId, userId);
-		if (!isOwner) {
-			registryItem.setSecret(true);
-		}
+		registryItem.setSecret(!isOwner);
 		
 		return wishListDao.createRegsitryItem(registryId, userId, registryItem);
 	}
@@ -157,7 +155,7 @@ public class RegistryService {
 		return registry.getOwnerId() == userId;
 	}
 
-	public boolean hasInvitation(int registryId, int userId) {
+	public boolean hasInvitation(int userId, int registryId) {
 		Invitation invitation = wishListDao.invitation(registryId, userId);
 		return invitation != null;
 	}

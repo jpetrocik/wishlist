@@ -71,7 +71,7 @@ public class WishListServiceApi {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 		}
 
-		boolean invitationExists = wishListService.hasInvitation(registry.getId(), wishlistUser.getId());
+		boolean invitationExists = wishListService.hasInvitation(wishlistUser.getId(), registry.getId());
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
@@ -144,7 +144,7 @@ public class WishListServiceApi {
 	public ResponseEntity<List<RegistryItem>> registryItems(@PathVariable int registryId, HttpSession session){
 		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
 		
-		boolean invitationExists = wishListService.hasInvitation(registryId, wishlistUser.getId());
+		boolean invitationExists = wishListService.hasInvitation(wishlistUser.getId(), registryId);
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
@@ -152,7 +152,7 @@ public class WishListServiceApi {
 		List<RegistryItem> wishlistItem = wishListService.registryItems(registryId);
 		
 		//filter secret gifts from owner
-		boolean isOwner = wishListService.isOwner(registryId, wishlistUser.getId());
+		boolean isOwner = wishListService.isOwner(wishlistUser.getId(), registryId);
 		if (isOwner) {
 			wishlistItem = wishlistItem.stream().filter(g -> !g.isSecret()).collect(Collectors.toList());
 			wishlistItem.forEach(g -> g.setPurchased(false));
@@ -168,7 +168,7 @@ public class WishListServiceApi {
 	public ResponseEntity<RegistryItem> addRegistryItem(@PathVariable int registryId, @RequestBody RegistryItem registryItem, HttpSession session){
 		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
 
-		boolean invitationExists = wishListService.hasInvitation(registryId, wishlistUser.getId());
+		boolean invitationExists = wishListService.hasInvitation(wishlistUser.getId(), registryId);
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
@@ -205,7 +205,7 @@ public class WishListServiceApi {
 	public ResponseEntity<RegistryItem> updateRegistryItem(@PathVariable int registryId, @PathVariable int giftId, @RequestBody RegistryItem registryItem, HttpSession session){
 		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
 
-		boolean invitationExists = wishListService.hasInvitation(registryId, wishlistUser.getId());
+		boolean invitationExists = wishListService.hasInvitation(wishlistUser.getId(), registryId);
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
@@ -246,7 +246,7 @@ public class WishListServiceApi {
 		Iterator<Registry> iterator = groupRegistry.iterator();
 		while (iterator.hasNext()) {
 			Registry registry = iterator.next();
-			boolean invitationExists = wishListService.hasInvitation(registry.getId(), wishlistUser.getId());
+			boolean invitationExists = wishListService.hasInvitation(wishlistUser.getId(), registry.getId());
 			if (!invitationExists) {
 				iterator.remove();
 			}
@@ -287,7 +287,7 @@ public class WishListServiceApi {
     public ResponseEntity<Void> purchasedToggle(@PathVariable int registryId, @PathVariable Integer giftId, HttpSession session){
 		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
 
-		boolean invitationExists = wishListService.hasInvitation(registryId, wishlistUser.getId());
+		boolean invitationExists = wishListService.hasInvitation(wishlistUser.getId(), registryId);
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
