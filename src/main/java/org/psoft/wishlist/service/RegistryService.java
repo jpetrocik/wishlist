@@ -12,12 +12,9 @@ import org.psoft.wishlist.dao.data.Invitation;
 import org.psoft.wishlist.dao.data.Registry;
 import org.psoft.wishlist.dao.data.RegistryItem;
 import org.psoft.wishlist.dao.data.WishlistUser;
-import org.psoft.wishlist.service.events.GiftPurchasedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
-
-import com.google.common.eventbus.EventBus;
 
 @Component
 public class RegistryService {
@@ -28,7 +25,7 @@ public class RegistryService {
 	UserDao userDao;
 
 	@Autowired
-	EmailerService emailer; 
+	EmailerService emailer;
 
 	public WishlistUser register(String email) {
 		String name = StringUtils.substringBefore(email, "@");
@@ -44,7 +41,7 @@ public class RegistryService {
 		if (wishListUser == null) {
 			wishListUser = register(email);
 		}
-		
+
 		Invitation invitation = createRegistry(wishListUser, wishListUser.getName());
 		return invitation;
 	}
@@ -54,21 +51,21 @@ public class RegistryService {
 		if (owner == null) {
 			return null;
 		}
-		
+
 		return createRegistry(owner, name);
-			
+
 	}
-		
+
 	public Registry updateRegistry(int ownerId, int registryId, Registry registry) {
 		return wishListDao.updateRegistry(ownerId, registryId, registry);
 	}
 
 	public Invitation createRegistry(WishlistUser owner, String name) {
 		Registry registry = wishListDao.createRegistry(name, owner.getId());
-		
+
 		//create invitation for owner
 		Invitation invitation = createInvitation(registry.getId(), owner.getEmail());
-		
+
 		return invitation;
 	}
 
@@ -77,19 +74,19 @@ public class RegistryService {
 		if (invitedUser == null) {
 			invitedUser = register(email, StringUtils.substringBefore(email, "@"));
 		}
-		
+
 		return createInvitation(registryId, invitedUser.getId());
 	}
 
 	public Invitation createInvitation(int registryId, int userId) {
-		
+
 		Invitation invitaiton = null;
 		try {
 			invitaiton = wishListDao.createInvitation(registryId, userId);
 		} catch (DuplicateKeyException e){
 			invitaiton = wishListDao.invitation(registryId, userId);
 		}
-		
+
 		return invitaiton;
 	}
 
@@ -125,10 +122,10 @@ public class RegistryService {
 	public RegistryItem addRegistryItem(int registryId, int userId, RegistryItem registryItem) {
 		boolean isOwner = isOwner(registryId, userId);
 		registryItem.setSecret(!isOwner);
-		
+
 		return wishListDao.createRegsitryItem(registryId, userId, registryItem);
 	}
-	
+
 	public RegistryItem updateRegistryItem(int ownerId, int registryItemId, RegistryItem registryItem) {
 		return wishListDao.updateRegistryItem(ownerId, registryItemId, registryItem);
 	}
@@ -140,7 +137,7 @@ public class RegistryService {
 
 	public boolean isOwner(int userId, int registryId){
 		Registry registry = registry(registryId);
-		
+
 		return registry.getOwnerId() == userId;
 	}
 
@@ -149,12 +146,8 @@ public class RegistryService {
 		return invitation != null;
 	}
 
-	public WishlistUser wishListUser(int id) {
-		return userDao.findById(id);
-	}
-
 	public String createGroup(String token, int ownerId, String[] emails) {
-		
+
 		//create registry and add to group
 		for (String e: emails){
 			WishlistUser wishListUser = userDao.findByEmail(e);
@@ -163,39 +156,39 @@ public class RegistryService {
 			}
 
 			Invitation invitation = startNewRegistry(e);
-			
+
 			//add registry to group
 			wishListDao.createGroup(token, invitation.getRegistryId());
 
 			sendInvitation(token, e);
 		}
-		
+
 		//Create invitation to the existing registry in the group and add
 		//invitations to the joining users
 		List<Registry> allGroupRegistries = groupRegistries(token);
 		Set<Integer> groupMembers = allGroupRegistries.stream().map(r->r.getOwnerId()).collect(Collectors.toSet());
 		Set<Integer> groupRegistries = allGroupRegistries.stream().map(r->r.getId()).collect(Collectors.toSet());
-		
-		//add this member to all group registry and 
+
+		//add this member to all group registry and
 		//add all the group member to this register
 		for (Integer userId : groupMembers) {
 			for (Integer registryId  : groupRegistries) {
 				createInvitation(registryId, userId);
 			}
 		}
-		
+
 		return token;
 	}
-	
+
 	public List<Registry> groupRegistries(String token) {
 		List<Registry> registries = new ArrayList<>();
-		
+
 		List<Integer> groupRegistryId = wishListDao.group(token);
 		for (Integer registryId : groupRegistryId) {
 			registries.add(
 					registry(registryId));
 		}
-		
+
 		return registries;
 	}
 
@@ -203,7 +196,7 @@ public class RegistryService {
 		WishlistUser wishListUser = userDao.findByEmail(email);
 		if (wishListUser == null)
 			return;
-		
+
 		internalSendInvitation(wishListUser, token);
 	}
 
@@ -217,10 +210,10 @@ public class RegistryService {
 
 	private void internalSendInvitation(WishlistUser invitedUser, String token) {
 		String authorizationToken = userDao.generateUserAuthToken(invitedUser.getId());
-		sendInvitationEmail(invitedUser.getEmail(), token + " Wish List Invitation", 
+		sendInvitationEmail(invitedUser.getEmail(), token + " Wish List Invitation",
 			"Use this link to access the " + token + " Wish List.\n\nhttp://gifts.petrocik.net/#/" + token + "?authorizationToken=" + authorizationToken);
 	}
-	
+
 	public RegistryItem registryItem(int giftId) {
 		return wishListDao.registryItem(giftId);
 	}

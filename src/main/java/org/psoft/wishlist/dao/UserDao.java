@@ -125,10 +125,13 @@ public class UserDao {
 
 		jdbcSmsTokenInsert.execute(new MapSqlParameterSource(parameters));
 
+		if (plivoClient.isTesting()) {
+			System.out.println("Code: " + code);
+		} else {
 		Message.creator("15623178081", Collections.singletonList(phone), "Your verification code is " + code)
 			.client(plivoClient)
 			.create();
-
+		}
 
 		return token;
 	}

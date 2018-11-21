@@ -127,8 +127,7 @@ public class WishListServiceApi {
 		if (invitation == null)
 			return ResponseEntity.status(403).body(null);
 
-		WishlistUser wishlistUser = wishListService.wishListUser(invitation.getInvitedUserId());
-		session.setAttribute("user", wishlistUser);
+		accountService.authenicateUser(invitation.getInvitedUserId(), session);
 
 		Registry registry = wishListService.registry(invitation.getRegistryId());
 
@@ -242,7 +241,7 @@ public class WishListServiceApi {
 		return ResponseEntity.ok().build();
 	}
 
-	@RequestMapping(path="/api/mfa/", method=RequestMethod.POST)
+	@RequestMapping(path="/api/mfa", method=RequestMethod.POST)
 	public ResponseEntity<String> requestMFAAuthorization(@RequestParam String phone, HttpSession session){
 
 		 try {
@@ -257,14 +256,16 @@ public class WishListServiceApi {
 
 	}
 
-	@RequestMapping(path="/api/mfa/", method=RequestMethod.GET)
-	public ResponseEntity<String> validateMFACode(@RequestParam String token, @RequestParam String code, HttpSession session){
+	@RequestMapping(path="/api/mfa", method=RequestMethod.GET)
+	public ResponseEntity<Void> validateMFACode(@RequestParam String token, @RequestParam String code, HttpSession session){
 		try {
 			String authenticationToken = accountService.validatedMFAMessage(token, code);
-			return ResponseEntity.status(200).body(authenticationToken);
+			accountService.authenicateUser(authenticationToken, session);
+
+			return ResponseEntity.status(200).build();
 
 		} catch (Exception e) {
-			return ResponseEntity.status(403).body("");
+			return ResponseEntity.status(403).build();
 		}
 	}
 
@@ -336,5 +337,6 @@ public class WishListServiceApi {
 
         return ResponseEntity.ok().build();
 	}
+
 
 }

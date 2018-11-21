@@ -32,20 +32,23 @@ public class Application {
 
 	@Value("${sms.authId}")
 	String authId;
-	
+
 	@Value("${sms.authToken}")
 	String authToken;
+
+	@Value("${sms.enable}")
+	boolean smsEnable;
 
 	@Bean
 	public EventBus eventBus() {
 		return new EventBus();
 	}
-	
+
 	@Bean
 	public Timer timer() {
 		return new Timer();
 	}
-	
+
 	@Bean
 	public DataSource dataSource(){
 		BasicDataSource dataSource = new BasicDataSource();
@@ -59,10 +62,10 @@ public class Application {
 		dataSource.setValidationQuery("/* ping */");
 		dataSource.setPoolPreparedStatements(true);
 		dataSource.setMaxOpenPreparedStatements(5);
-		
+
 		return dataSource;
 	}
-	
+
 	@Bean
 	public FilterRegistrationBean someFilterRegistration() {
 
@@ -73,21 +76,21 @@ public class Application {
 	    registration.setName("loginFilter");
 	    registration.setOrder(1);
 	    return registration;
-	} 
-	
+	}
+
 	@Bean(name = "loginFilter")
 	public Filter loginFilter() {
 		return new LoginFilter();
 	}
-	
+
 	@Bean
 	public PlivoClient AuthyApiClient() {
 		PlivoClient plivoClient = Plivo.init(authId, authToken);
-		plivoClient.setTesting(true);
+		plivoClient.setTesting(!smsEnable);
 		return plivoClient;
-		
+
 	}
-	
+
     public static void main(String[] args) {
         ApplicationContext ctx = SpringApplication.run(Application.class, args);
     }
