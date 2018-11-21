@@ -131,8 +131,6 @@ public class WishListServiceApi {
 
 	/**
 	 * Retrieves the registry associated with the invitation.
-	 *
-	 * TODO Should invitation api be good for both group and single registry
 	 */
 	@RequestMapping(path="/api/invitation/{token}", method=RequestMethod.GET)
 	public ResponseEntity<Registry> inventation(@PathVariable String token, HttpSession session){
@@ -285,11 +283,13 @@ public class WishListServiceApi {
 	public ResponseEntity<List<Registry>> group(@PathVariable String token, HttpSession session){
 		Account wishlistUser = (Account)session.getAttribute("user");
 
+		//load all registry for this group
 		List<Registry> groupRegistry = registryService.groupRegistries(token);
 		if (groupRegistry == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 		}
 
+		//remove any registries the authenticate account does not have an invitation for
 		Iterator<Registry> iterator = groupRegistry.iterator();
 		while (iterator.hasNext()) {
 			Registry registry = iterator.next();

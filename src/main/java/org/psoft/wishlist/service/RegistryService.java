@@ -105,8 +105,8 @@ public class RegistryService {
 		return wishListDao.registry(registryId);
 	}
 
-	public Registry registry(String token) {
-		return wishListDao.registry(token);
+	public Registry xxx_registry(String token) {
+		return wishListDao.xxx_registry(token);
 	}
 
 	public List<RegistryItem> registryItems(int registryId) {

@@ -16,7 +16,6 @@ import org.psoft.wishlist.dao.data.Registry;
 import org.psoft.wishlist.dao.data.RegistryItem;
 import org.psoft.wishlist.util.TokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -32,41 +31,41 @@ public class RegistryDao {
 	DataSource dataSource;
 
 	JdbcTemplate jdbcTemplate;
-	
+
 	SimpleJdbcInsert jdbcRegistryInsert;
-	
+
 	SimpleJdbcInsert jdbcRegistryItemsInsert;
 
 	SimpleJdbcInsert jdbcInvitationInsert;
-	
+
 	SimpleJdbcInsert jdbcRegistryGroupInsert;
 
 	InvitationRowMapper invitationRowMapper = new InvitationRowMapper();
-	
+
 	RegistryItemRowMapper registryItemRowMapper = new RegistryItemRowMapper();
 
 	RegistryRowMapper registryRowMapper = new RegistryRowMapper();
 
 	public RegistryDao() {
 	}
-	
+
 	@PostConstruct
 	public void  init() {
 		jdbcTemplate = new JdbcTemplate(dataSource);
-		
+
 		jdbcRegistryInsert = new SimpleJdbcInsert(jdbcTemplate);
 		jdbcRegistryInsert.withTableName("REGISTRY").usingGeneratedKeyColumns("ID");
-		
+
 		jdbcRegistryItemsInsert = new SimpleJdbcInsert(jdbcTemplate);
 		jdbcRegistryItemsInsert.withTableName("REGISTRY_ITEMS").usingGeneratedKeyColumns("ID");
-		
+
 		jdbcInvitationInsert = new SimpleJdbcInsert(jdbcTemplate);
 		jdbcInvitationInsert.withTableName("REGISTRY_INVITATION").usingGeneratedKeyColumns("ID");
 
 		jdbcRegistryGroupInsert = new SimpleJdbcInsert(jdbcTemplate);
 		jdbcRegistryGroupInsert.withTableName("REGISTRY_GROUP");
 	}
-	
+
 	public Registry createRegistry(String name, int ownerId) {
         String token = TokenGenerator.createToken(10);
 
@@ -80,14 +79,14 @@ public class RegistryDao {
 	}
 
 	public Registry registry(int registryId) {
-		Registry registry = jdbcTemplate.queryForObject("select * from REGISTRY where ID=?", 
+		Registry registry = jdbcTemplate.queryForObject("select * from REGISTRY where ID=?",
 				new Object[] { registryId}, registryRowMapper);
 		return registry;
 	}
 
-	public Registry registry(String token) {
+	public Registry xxx_registry(String token) {
 		try {
-			Registry registry = jdbcTemplate.queryForObject("select * from REGISTRY where TOKEN=?", 
+			Registry registry = jdbcTemplate.queryForObject("select * from REGISTRY where TOKEN=?",
 					new Object[] { token}, registryRowMapper);
 			return registry;
 		} catch (EmptyResultDataAccessException e) {
@@ -102,14 +101,14 @@ public class RegistryDao {
         parameters.put("REGISTRY_ID", registryId);
         parameters.put("INVITED_USER_ID", invitedUserId);
 		parameters.put("TOKEN", token);
-        
+
         Number key = jdbcInvitationInsert.executeAndReturnKey(new MapSqlParameterSource(parameters));
         return new Invitation(key.intValue(), registryId, invitedUserId, token);
 	}
 
 	public Invitation invitation(int registryId, int invitedUserId) {
 		try {
-			Invitation invitation = jdbcTemplate.queryForObject("select * from REGISTRY_INVITATION where REGISTRY_ID=? AND INVITED_USER_ID=?", 
+			Invitation invitation = jdbcTemplate.queryForObject("select * from REGISTRY_INVITATION where REGISTRY_ID=? AND INVITED_USER_ID=?",
 					new Object[] { registryId, invitedUserId}, invitationRowMapper);
 			return invitation;
 		} catch (EmptyResultDataAccessException e) {
@@ -119,32 +118,32 @@ public class RegistryDao {
 
 	public Invitation invitation(String token) {
 		try {
-			Invitation invitation = jdbcTemplate.queryForObject("select * from REGISTRY_INVITATION where TOKEN=?", 
+			Invitation invitation = jdbcTemplate.queryForObject("select * from REGISTRY_INVITATION where TOKEN=?",
 					new Object[] { token }, invitationRowMapper);
 			return invitation;
 		} catch (EmptyResultDataAccessException e) {
 			return null;
 		}
 	}
-	
+
 	public Registry defaultRegistry(int userId) {
-		Registry registry  = jdbcTemplate.queryForObject("select * from REGISTRY where OWNER_ID=? AND IS_DEFAULT=1 ORDER BY ID asc", 
+		Registry registry  = jdbcTemplate.queryForObject("select * from REGISTRY where OWNER_ID=? AND IS_DEFAULT=1 ORDER BY ID asc",
 				new Object[] { userId }, registryRowMapper);
 		return registry;
 	}
 
 	public List<RegistryItem> registryItems(int registryId) {
-		List<RegistryItem> wishList  = jdbcTemplate.query("select * from REGISTRY_ITEMS where REGISTRY_ID=? ORDER BY ID asc", 
+		List<RegistryItem> wishList  = jdbcTemplate.query("select * from REGISTRY_ITEMS where REGISTRY_ID=? ORDER BY ID asc",
 				new Object[] { registryId }, registryItemRowMapper);
 		return wishList;
 	}
 
 	public RegistryItem registryItem(long giftId) {
-		RegistryItem registryItem  = jdbcTemplate.queryForObject("select * from REGISTRY_ITEMS where  ID=?", 
+		RegistryItem registryItem  = jdbcTemplate.queryForObject("select * from REGISTRY_ITEMS where  ID=?",
 				new Object[] { giftId }, registryItemRowMapper);
 		return registryItem;
 	}
-	
+
 	public RegistryItem createRegsitryItem(int registryId, int userId, RegistryItem gift) {
 		Map<String, Object> parameters = new HashMap<>();
         parameters.put("REGISTRY_ID", registryId);
@@ -154,40 +153,40 @@ public class RegistryDao {
         parameters.put("URL", gift.getUrl());
 
         Number key = jdbcRegistryItemsInsert.executeAndReturnKey(new MapSqlParameterSource(parameters));
-		
+
 		return registryItem(key.intValue());
 	}
 
 	public RegistryItem updateRegistryItem(int ownerId,int registryItemId, RegistryItem gift) {
-		jdbcTemplate.update("update REGISTRY_ITEMS set DESCR=?, URL=? where ID=? and OWNER_ID=?", 
+		jdbcTemplate.update("update REGISTRY_ITEMS set DESCR=?, URL=? where ID=? and OWNER_ID=?",
 				gift.getDescr(), gift.getUrl(), registryItemId, ownerId);
-		
+
 		return registryItem(registryItemId);
 	}
 
 	public Registry updateRegistry(int ownerId, int registryId, Registry registry) {
-		jdbcTemplate.update("update REGISTRY set NAME=? where ID=? and OWNER_ID=?", 
+		jdbcTemplate.update("update REGISTRY set NAME=? where ID=? and OWNER_ID=?",
 				registry.getName(), registryId, ownerId);
-		
+
 		return registry(registryId);
 	}
 
 	public void purchasedRegistryItem(int giftId, String purchasedByUserId) {
-		jdbcTemplate.update("update REGISTRY_ITEMS set IS_PURCHASED = !IS_PURCHASED, PURCHASED_BY=? where ID=?",  
+		jdbcTemplate.update("update REGISTRY_ITEMS set IS_PURCHASED = !IS_PURCHASED, PURCHASED_BY=? where ID=?",
 				purchasedByUserId, giftId);
 	}
-	
+
 	public void createGroup(String token, Integer registryId) {
         Map<String, Object> parameters = new HashMap<>();
 		parameters.put("TOKEN", token);
         parameters.put("REGISTRY_ID", registryId);
-        
+
         jdbcRegistryGroupInsert.execute(new MapSqlParameterSource(parameters));
 	}
 
 	public List<Integer> group(String token) {
 		List<Integer> registryIds  = jdbcTemplate.queryForList(
-				"select REGISTRY_ID from REGISTRY_GROUP where TOKEN=? ORDER BY REGISTRY_ID", 
+				"select REGISTRY_ID from REGISTRY_GROUP where TOKEN=? ORDER BY REGISTRY_ID",
 				new Object[] { token }, Integer.class);
 		return registryIds;
 	}
@@ -202,7 +201,7 @@ public class RegistryDao {
 			return registry;
 		}
 	}
-	
+
 	public class RegistryItemRowMapper implements RowMapper<RegistryItem> {
 
 		@Override
@@ -216,7 +215,7 @@ public class RegistryDao {
 			return registryItem;
 		}
 	}
-	
+
 	public class InvitationRowMapper implements RowMapper<Invitation> {
 
 		@Override
