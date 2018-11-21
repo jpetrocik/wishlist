@@ -3,7 +3,6 @@ package org.psoft.wishlist.dao;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,18 +21,12 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 
-import com.plivo.api.PlivoClient;
-import com.plivo.api.models.message.Message;
-
 @Component
 public class AccountDao {
 	private static Log log = LogFactory.getLog(AccountDao.class);
 
 	@Autowired
 	DataSource dataSource;
-
-	@Autowired
-	PlivoClient plivoClient;
 
 	JdbcTemplate jdbcTemplate;
 
@@ -108,32 +101,14 @@ public class AccountDao {
 
 	}
 
-	public String generateMFAToken(String phone) throws Exception {
-		Account account = findByPhone(phone);
-
-		if (account == null)
-			throw new AccountException();
-
-		String code = String.format("%04d",
-				(int)(Math.random()*10000));
-		String token = TokenGenerator.createToken(10);
-
+	public void saveMFAToken(int accountId, String token, String code) throws Exception {
 		Map<String, Object> parameters = new HashMap<>();
-		parameters.put("ACCOUNT_ID", account.getId());
+		parameters.put("ACCOUNT_ID", accountId);
 		parameters.put("TOKEN", token);
 		parameters.put("CODE", code);
+		parameters.put("EXPIRES", new java.sql.Time(System.currentTimeMillis() + (30*60*1000)));
 
 		jdbcSmsTokenInsert.execute(new MapSqlParameterSource(parameters));
-
-		if (plivoClient.isTesting()) {
-			System.out.println("Code: " + code);
-		} else {
-		Message.creator("15623178081", Collections.singletonList(phone), "Your verification code is " + code)
-			.client(plivoClient)
-			.create();
-		}
-
-		return token;
 	}
 
 
@@ -152,8 +127,8 @@ public class AccountDao {
 
 	public String validateMFAToken(String token, String code) {
 		String accountId =  jdbcTemplate.queryForObject(
-			    "select ACCOUNT_ID from MFA_TOKEN where CODE=? AND TOKEN=?",
-			    new Object[] { code, token }, String.class);
+			    "select ACCOUNT_ID from MFA_TOKEN where CODE=? AND TOKEN=? AND UNIX_TIMESTAMP(EXPIRES)>?",
+			    new Object[] { code, token, System.currentTimeMillis()/1000l  }, String.class);
 
 		return generateUserAuthToken(Integer.parseInt(accountId));
 
@@ -186,7 +161,7 @@ public class AccountDao {
 		}
 	}
 
-	public class AccountException extends Exception {
+	public static class AccountException extends Exception {
 
 		public AccountException() {
 			super();

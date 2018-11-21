@@ -1,5 +1,6 @@
 package org.psoft.wishlist.service;
 
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -7,15 +8,23 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
 import org.psoft.wishlist.dao.AccountDao;
+import org.psoft.wishlist.dao.AccountDao.AccountException;
 import org.psoft.wishlist.dao.data.Account;
+import org.psoft.wishlist.util.TokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.plivo.api.PlivoClient;
+import com.plivo.api.models.message.Message;
 
 @Component
 public class AccountService {
 
 	@Autowired
 	AccountDao accountDao;
+
+	@Autowired
+	PlivoClient plivoClient;
 
 	public Account register(String email) {
 		String name = StringUtils.substringBefore(email, "@");
@@ -26,9 +35,28 @@ public class AccountService {
 		return accountDao.register(email, name);
 	}
 
-	public String sendMFAMessage(String phone) throws Exception {
-		return accountDao.generateMFAToken(
-				cleanPhone(phone));
+	public String sendMFAMessage(String rawPhone) throws Exception {
+		String phone = normalizePhone(rawPhone);
+
+		Account account = accountDao.findByPhone(phone);
+		if (account == null)
+			throw new AccountException();
+
+		String code = String.format("%04d",
+				(int)(Math.random()*10000));
+		String token = TokenGenerator.createToken(25);
+
+		accountDao.saveMFAToken(account.getId(), token, code);
+
+		if (plivoClient.isTesting()) {
+			System.out.println("Code: " + code);
+		} else {
+			Message.creator("15623178081", Collections.singletonList(phone), "Your verification code is " + code)
+				.client(plivoClient)
+				.create();
+		}
+
+		return token;
 	}
 
 	public String validatedMFAMessage(String token, String code) {
@@ -51,7 +79,7 @@ public class AccountService {
 		session.setAttribute("user", wishListUser);
 	}
 
-	String cleanPhone(String rawPhone) {
+	String normalizePhone(String rawPhone) {
 		StringBuilder phone = new StringBuilder();
 		Pattern p = Pattern.compile("\\d+");
 		Matcher m = p.matcher(rawPhone);
