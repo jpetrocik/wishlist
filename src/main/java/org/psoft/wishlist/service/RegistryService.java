@@ -205,7 +205,6 @@ public class RegistryService {
 			return;
 		
 		internalSendInvitation(wishListUser, token);
-
 	}
 
 	public void sendInvitation(String email, String token) {

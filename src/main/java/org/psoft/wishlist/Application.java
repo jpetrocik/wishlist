@@ -14,8 +14,9 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
-import com.authy.AuthyApiClient;
 import com.google.common.eventbus.EventBus;
+import com.plivo.api.Plivo;
+import com.plivo.api.PlivoClient;
 
 @SpringBootApplication
 public class Application {
@@ -28,6 +29,12 @@ public class Application {
 
 	@Value("${database.password}")
 	String dbPassword;
+
+	@Value("${sms.authId}")
+	String authId;
+	
+	@Value("${sms.authToken}")
+	String authToken;
 
 	@Bean
 	public EventBus eventBus() {
@@ -73,11 +80,13 @@ public class Application {
 		return new LoginFilter();
 	}
 	
-//	@Bean
-//	public AuthyApiClient AuthyApiClient() {
-//		return new AuthyApiClient("JmZmpoPYbkbHttcYuPiUTAVBfrbP9t4y", "https://api.authy.com/");
-//		
-//	}
+	@Bean
+	public PlivoClient AuthyApiClient() {
+		PlivoClient plivoClient = Plivo.init(authId, authToken);
+		plivoClient.setTesting(true);
+		return plivoClient;
+		
+	}
 	
     public static void main(String[] args) {
         ApplicationContext ctx = SpringApplication.run(Application.class, args);

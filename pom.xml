@@ -138,9 +138,9 @@
 		</dependency>
 		
 		<dependency>
-		   	<groupId>com.authy</groupId>
-		    <artifactId>authy-java</artifactId>
-    		<version>1.5.0</version>
+		  <groupId>com.plivo</groupId>
+		  <artifactId>plivo-java</artifactId>
+		  <version>4.1.5</version>
 		</dependency>
 		
 	</dependencies>

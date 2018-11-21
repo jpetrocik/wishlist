@@ -25,19 +25,26 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.google.common.eventbus.EventBus;
+import com.plivo.api.PlivoClient;
 
 @RestController
 public class WishListServiceApi {
-	
+
 	@Autowired
 	RegistryService wishListService;
-	
+
+	@Autowired
+	AccountService accountService;;
+
 	@Autowired
 	ScraperService scraperService;
-	
+
 	@Autowired
 	EventBus eventBus;
-	
+
+	@Autowired
+	PlivoClient plivoClient;
+
 	@RequestMapping(path="/api/register", method=RequestMethod.POST)
 	public WishlistUser register(@RequestParam String email, @RequestParam String name, HttpSession session){
 		return wishListService.register(email,name);
@@ -50,7 +57,7 @@ public class WishListServiceApi {
 	public Invitation startRegistry(@RequestParam String email, HttpSession session){
 		return wishListService.startNewRegistry(email);
 	}
-	
+
 	@RequestMapping(path="/api/registry/default", method=RequestMethod.GET)
 	public ResponseEntity<Registry> defaultUserRegsiter(HttpSession session){
 		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
@@ -109,7 +116,7 @@ public class WishListServiceApi {
 		}
 
 		Invitation invitation = wishListService.createInvitation(registryId, email);
-		
+
 		return ResponseEntity.ok(invitation);
 	}
 
@@ -119,23 +126,23 @@ public class WishListServiceApi {
 		Invitation invitation = wishListService.invitation(token);
 		if (invitation == null)
 			return ResponseEntity.status(403).body(null);
-		
+
 		WishlistUser wishlistUser = wishListService.wishListUser(invitation.getInvitedUserId());
 		session.setAttribute("user", wishlistUser);
-		
+
 		Registry registry = wishListService.registry(invitation.getRegistryId());
-		
+
 		return ResponseEntity.ok(registry);
 	}
-	
+
 	@RequestMapping(path="/api/resend/invitation", method=RequestMethod.GET)
 	public ResponseEntity<Void> resendInvitation(@RequestParam String email, @RequestParam String token, HttpSession session){
 
 		wishListService.resendInvitation(email, token);
-		
+
 		return ResponseEntity.ok().build();
 	}
-	
+
 
 	/**
 	 * Get registry items
@@ -143,21 +150,21 @@ public class WishListServiceApi {
 	@RequestMapping(path="/api/registry/{registryId}/item", method=RequestMethod.GET)
 	public ResponseEntity<List<RegistryItem>> registryItems(@PathVariable int registryId, HttpSession session){
 		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
-		
+
 		boolean invitationExists = wishListService.hasInvitation(wishlistUser.getId(), registryId);
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
-		
+
 		List<RegistryItem> wishlistItem = wishListService.registryItems(registryId);
-		
+
 		//filter secret gifts from owner
 		boolean isOwner = wishListService.isOwner(wishlistUser.getId(), registryId);
 		if (isOwner) {
 			wishlistItem = wishlistItem.stream().filter(g -> !g.isSecret()).collect(Collectors.toList());
 			wishlistItem.forEach(g -> g.setPurchased(false));
 		}
-		
+
 		return ResponseEntity.ok(wishlistItem);
 	}
 
@@ -172,7 +179,7 @@ public class WishListServiceApi {
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
-		
+
 		registryItem = wishListService.addRegistryItem(registryId, wishlistUser.getId(), registryItem);
 
 		GiftAddEvent event = new GiftAddEvent();
@@ -193,7 +200,7 @@ public class WishListServiceApi {
 		} catch (Exception e) {
 			return ResponseEntity.status(401).body(null);
 		}
-		
+
 		Map<String, String> metadata = scraperService.downloadPage(url);
 		return ResponseEntity.ok(metadata);
 	}
@@ -211,14 +218,14 @@ public class WishListServiceApi {
 		}
 
 		wishListService.updateRegistryItem(wishlistUser.getId(), giftId, registryItem);
-		
+
 //		GiftAddEvent event = new GiftAddEvent();
 //		event.who = wishlistUser.getName();
 //		event.gift = registryItem;
 //		eventBus.post(event);
 
 		return ResponseEntity.ok(registryItem);
-		
+
 	}
 
 	@RequestMapping(path="/api/group/{token}", method=RequestMethod.POST)
@@ -228,13 +235,39 @@ public class WishListServiceApi {
 		String groupToken = wishListService.createGroup(token, wishlistUser.getId(), email);
 		return ResponseEntity.ok(groupToken);
 	}
-	
+
 	@RequestMapping(path="/api/group/invitation/{token}", method=RequestMethod.POST)
 	public ResponseEntity<Void> sendGroupInvitation(@PathVariable String token, @RequestParam String email, HttpSession session){
 		wishListService.sendInvitation(email, token);
 		return ResponseEntity.ok().build();
 	}
-	
+
+	@RequestMapping(path="/api/mfa/", method=RequestMethod.POST)
+	public ResponseEntity<String> requestMFAAuthorization(@RequestParam String phone, HttpSession session){
+
+		 try {
+			String token = accountService.sendMFAMessage(phone);
+
+			return ResponseEntity.status(200).body(token);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(500).body("");
+		}
+
+	}
+
+	@RequestMapping(path="/api/mfa/", method=RequestMethod.GET)
+	public ResponseEntity<String> validateMFACode(@RequestParam String token, @RequestParam String code, HttpSession session){
+		try {
+			String authenticationToken = accountService.validatedMFAMessage(token, code);
+			return ResponseEntity.status(200).body(authenticationToken);
+
+		} catch (Exception e) {
+			return ResponseEntity.status(403).body("");
+		}
+	}
+
 	@RequestMapping(path="/api/group/{token}", method=RequestMethod.GET)
 	public ResponseEntity<List<Registry>> group(@PathVariable String token, HttpSession session){
 		WishlistUser wishlistUser = (WishlistUser)session.getAttribute("user");
@@ -252,11 +285,11 @@ public class WishListServiceApi {
 				iterator.remove();
 			}
 		}
-		
+
 		if (groupRegistry.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
-		
+
 		return ResponseEntity.ok(groupRegistry);
 	}
 
@@ -277,7 +310,7 @@ public class WishListServiceApi {
 				return ResponseEntity.ok(registry);
 			}
 		}
-		
+
 		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 	}
 
@@ -303,5 +336,5 @@ public class WishListServiceApi {
 
         return ResponseEntity.ok().build();
 	}
-    
+
 }
