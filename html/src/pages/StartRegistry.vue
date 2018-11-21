@@ -26,7 +26,7 @@ export default {
         let vue = this
         this.$axios({
           method: 'GET',
-          url: '/api/registry/' + this.$route.params.token
+          url: '/api/invitation/' + this.$route.params.token
         }).then(function(response) {
             vue.registry = response.data
 

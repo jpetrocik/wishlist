@@ -8,10 +8,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.psoft.wishlist.dao.AccountDao;
 import org.psoft.wishlist.dao.RegistryDao;
+import org.psoft.wishlist.dao.data.Account;
 import org.psoft.wishlist.dao.data.Invitation;
 import org.psoft.wishlist.dao.data.Registry;
 import org.psoft.wishlist.dao.data.RegistryItem;
-import org.psoft.wishlist.dao.data.Account;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
@@ -31,12 +31,12 @@ public class RegistryService {
 	EmailerService emailer;
 
 	public Invitation startNewRegistry(String email) {
-		Account wishListUser = accountDao.findByEmail(email);
-		if (wishListUser == null) {
-			wishListUser = accountService.register(email);
+		Account account = accountDao.findByEmail(email);
+		if (account == null) {
+			account = accountService.register(email);
 		}
 
-		Invitation invitation = createRegistry(wishListUser, wishListUser.getName());
+		Invitation invitation = createRegistry(account, account.getName());
 		return invitation;
 	}
 
@@ -186,19 +186,32 @@ public class RegistryService {
 		return registries;
 	}
 
+	/**
+	 * Resends an invitation.
+	 *
+	 * TODO Use template for email
+	 */
 	public void resendInvitation(String email, String token) {
-		Account wishListUser = accountDao.findByEmail(email);
-		if (wishListUser == null)
+		Account account = accountDao.findByEmail(email);
+		if (account == null)
 			return;
 
-		internalSendInvitation(wishListUser, token);
+		Invitation invitation = invitation(token);
+		if (hasInvitation(account.getId(), invitation.getRegistryId()))
+				internalSendInvitation(account, token);
 	}
 
+	/**
+	 * Sends an invitation.
+	 *
+	 * TODO Use template for email
+	 */
 	public void sendInvitation(String email, String token) {
 		Account invitedUser = accountDao.findByEmail(email);
 		if (invitedUser == null) {
 			invitedUser = accountService.register(email, StringUtils.substringBefore(email, "@"));
 		}
+
 		internalSendInvitation(invitedUser, token);
 	}
 

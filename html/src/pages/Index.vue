@@ -30,21 +30,13 @@ export default {
       let vue = this
       this.$axios({
         method: 'POST',
-        url: '/api/start',
+        url: '/api/registry/start',
         params: {
           email: this.email
         }
       }).then(function(response) {
-        vue.$axios({
-          method: 'GET',
-          url: '/api/invitation/' + response.data.token,
-          params: {
-            email: vue.email
-          }
-        }).then(function(response) {
-          let nextPath = '/startRegistry/' + response.data.token
-          vue.$router.push({ path: nextPath })
-        })
+        let nextPath = '/startRegistry/' + response.data.token
+        vue.$router.push({ path: nextPath })
       })
     }
   },
