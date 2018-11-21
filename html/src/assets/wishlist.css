@@ -1,0 +1,207 @@
+a {
+	color:black;
+}
+
+h2 {
+    margin: 0;
+    font-size: 25px;
+}
+
+
+#initials {
+	background-color: #ca1827;
+	color:#fff;
+	width: 100%;
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	padding: 2px;
+	border-bottom: 1px solid #ccc;
+}
+
+#initials span {
+	/* border: 1px solid #ccc; */
+	padding: 0 12px 0 10px;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+
+#page {
+	background-color:#FFFFFF;
+	border: 1px solid #cccccc;
+	margin: 55px 45px 45px 45px;
+	padding: 15px;
+	border-radius: 15px;
+}
+
+#header {
+	font-size:25px;
+	font-weight:bold;
+	text-decoration:underline;
+}
+
+.note {
+	color: #167101;
+}
+
+.selectedTab {
+	font-size:12px;
+	font-weight:bold;
+	text-align:left;
+	color:#000000;
+	padding:2px 15px 2px 5px;
+	background-color:#FFFFFF;
+	border:1px solid #000000;
+}
+.tabSpacing {
+	border-color:#DBE1F1;
+}
+
+.xmasButton {
+	background-color: #ca1827;
+	width:125px;
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border: 1px solid #000;
+	color: #fff;
+	margin: 3px;
+}
+
+.xmasInput {
+	width: 100%;
+	border-radius: 3px;
+	border: 1px solid #000;
+	margin: 3px;
+	background-color: #EEE;
+}
+
+.gift {
+	margin:15px;
+}
+
+.gift .purchasedCheckBox {
+	height: 32px;
+	width: 30px;
+	background-image: url('../assets/images/check_off.png');
+	display: inline-block;
+	vertical-align: top;
+}
+
+.gift .purchasedCheckBox.purchased {
+	background-image: url('../assets/images/check_on.png');
+}
+
+.gift .giftPurchasedBy {
+	font-weight:normal;
+	padding-left: 15px;
+	display: none;
+}	
+
+.gift.purchased .giftDescr {
+	text-decoration:line-through;
+}
+
+.gift .giftDetails {
+	display: inline-block;
+	padding-top: 7px;
+}
+
+.gift.editing .giftDetails {
+	display: none;
+}
+
+.gift .giftEdit {
+	display: none;
+}
+
+.gift.editing .giftEdit {
+	display: inline-block;
+	width: 80%;
+}
+
+.gift.purchased .giftPurchasedBy {
+	display: inline;
+}
+
+.gift.secret {
+	color: #167101;
+}
+
+.gift div.edit {
+	display:none;
+	margin-left: 35px;
+}
+
+.gift img {
+	vertical-align: middle;
+}
+
+.gift input[type=button].cancel {
+	background-color: #eee;
+	color: #000;
+}
+
+.giftLink {
+	margin-left:15px;
+}
+
+#addGift {
+	border-top: 1px solid #696969;
+    padding-top: 15px;
+}
+
+#addGift img {
+	float:left;
+	height: 65px;
+	margin-right: 5px;
+	/* vertical-align: middle; */
+}
+
+#addGift div {
+	/* margin: 10px 0 10px 0; */
+}
+
+#addGift textarea {
+	height: 65px;
+}
+
+
+#addGiftDescr.loading {
+	background-image: url('../assets/images/wait.gif');
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+textarea[name=descr] {
+	display:none;
+}
+
+#emailOption.mfaOption {
+	display:none;
+}
+
+#sendInvite.emailSent {
+	display:none;
+}
+
+#checkEmail {
+	display:none;
+}
+
+#checkEmail.emailSent {
+	display:block;
+}
+
+#checkEmail .emailAddress {
+	color:#ca1827;
+}
+
+#mfaOption {
+	display:none;
+}
+
+#mfaOption.mfaOption {
+	display:block;
+}
