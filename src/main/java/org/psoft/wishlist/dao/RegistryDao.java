@@ -25,8 +25,8 @@ import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 
 @Component
-public class WishListDao {
-	private static Log log = LogFactory.getLog(WishListDao.class);
+public class RegistryDao {
+	private static Log log = LogFactory.getLog(RegistryDao.class);
 
 	@Autowired
 	DataSource dataSource;
@@ -47,7 +47,7 @@ public class WishListDao {
 
 	RegistryRowMapper registryRowMapper = new RegistryRowMapper();
 
-	public WishListDao() {
+	public RegistryDao() {
 	}
 	
 	@PostConstruct

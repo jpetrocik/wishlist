@@ -6,12 +6,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.psoft.wishlist.dao.UserDao;
-import org.psoft.wishlist.dao.WishListDao;
+import org.psoft.wishlist.dao.AccountDao;
+import org.psoft.wishlist.dao.RegistryDao;
 import org.psoft.wishlist.dao.data.Invitation;
 import org.psoft.wishlist.dao.data.Registry;
 import org.psoft.wishlist.dao.data.RegistryItem;
-import org.psoft.wishlist.dao.data.WishlistUser;
+import org.psoft.wishlist.dao.data.Account;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
@@ -19,27 +19,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class RegistryService {
 	@Autowired
-	WishListDao wishListDao;
+	RegistryDao wishListDao;
 
 	@Autowired
-	UserDao userDao;
+	AccountService accountService;
+
+	@Autowired
+	AccountDao accountDao;
 
 	@Autowired
 	EmailerService emailer;
 
-	public WishlistUser register(String email) {
-		String name = StringUtils.substringBefore(email, "@");
-		return userDao.register(email, name);
-	}
-
-	public WishlistUser register(String email, String name) {
-		return userDao.register(email, name);
-	}
-
 	public Invitation startNewRegistry(String email) {
-		WishlistUser wishListUser = userDao.findByEmail(email);
+		Account wishListUser = accountDao.findByEmail(email);
 		if (wishListUser == null) {
-			wishListUser = register(email);
+			wishListUser = accountService.register(email);
 		}
 
 		Invitation invitation = createRegistry(wishListUser, wishListUser.getName());
@@ -47,7 +41,7 @@ public class RegistryService {
 	}
 
 	public Invitation createRegistry(int ownerId, String name) {
-		WishlistUser owner = userDao.findById(ownerId);
+		Account owner = accountDao.findById(ownerId);
 		if (owner == null) {
 			return null;
 		}
@@ -60,7 +54,7 @@ public class RegistryService {
 		return wishListDao.updateRegistry(ownerId, registryId, registry);
 	}
 
-	public Invitation createRegistry(WishlistUser owner, String name) {
+	public Invitation createRegistry(Account owner, String name) {
 		Registry registry = wishListDao.createRegistry(name, owner.getId());
 
 		//create invitation for owner
@@ -70,9 +64,9 @@ public class RegistryService {
 	}
 
 	public Invitation createInvitation(int registryId, String email) {
-		WishlistUser invitedUser = userDao.findByEmail(email);
+		Account invitedUser = accountDao.findByEmail(email);
 		if (invitedUser == null) {
-			invitedUser = register(email, StringUtils.substringBefore(email, "@"));
+			invitedUser = accountService.register(email, StringUtils.substringBefore(email, "@"));
 		}
 
 		return createInvitation(registryId, invitedUser.getId());
@@ -150,9 +144,9 @@ public class RegistryService {
 
 		//create registry and add to group
 		for (String e: emails){
-			WishlistUser wishListUser = userDao.findByEmail(e);
+			Account wishListUser = accountDao.findByEmail(e);
 			if (wishListUser == null) {
-				wishListUser = register(e);
+				wishListUser = accountService.register(e);
 			}
 
 			Invitation invitation = startNewRegistry(e);
@@ -193,7 +187,7 @@ public class RegistryService {
 	}
 
 	public void resendInvitation(String email, String token) {
-		WishlistUser wishListUser = userDao.findByEmail(email);
+		Account wishListUser = accountDao.findByEmail(email);
 		if (wishListUser == null)
 			return;
 
@@ -201,15 +195,15 @@ public class RegistryService {
 	}
 
 	public void sendInvitation(String email, String token) {
-		WishlistUser invitedUser = userDao.findByEmail(email);
+		Account invitedUser = accountDao.findByEmail(email);
 		if (invitedUser == null) {
-			invitedUser = register(email, StringUtils.substringBefore(email, "@"));
+			invitedUser = accountService.register(email, StringUtils.substringBefore(email, "@"));
 		}
 		internalSendInvitation(invitedUser, token);
 	}
 
-	private void internalSendInvitation(WishlistUser invitedUser, String token) {
-		String authorizationToken = userDao.generateUserAuthToken(invitedUser.getId());
+	private void internalSendInvitation(Account invitedUser, String token) {
+		String authorizationToken = accountDao.generateUserAuthToken(invitedUser.getId());
 		sendInvitationEmail(invitedUser.getEmail(), token + " Wish List Invitation",
 			"Use this link to access the " + token + " Wish List.\n\nhttp://gifts.petrocik.net/#/" + token + "?authorizationToken=" + authorizationToken);
 	}

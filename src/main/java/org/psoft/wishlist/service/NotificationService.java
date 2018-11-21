@@ -11,10 +11,10 @@ import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.psoft.wishlist.dao.UserDao;
+import org.psoft.wishlist.dao.AccountDao;
 import org.psoft.wishlist.dao.data.Registry;
 import org.psoft.wishlist.dao.data.RegistryItem;
-import org.psoft.wishlist.dao.data.WishlistUser;
+import org.psoft.wishlist.dao.data.Account;
 import org.psoft.wishlist.service.events.GiftAddEvent;
 import org.psoft.wishlist.service.events.GiftPurchasedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class NotificationService {
 	long period;
 	
 	@Autowired
-	UserDao userDao;
+	AccountDao userDao;
 	
 	@Autowired
 	RegistryService wishListService;
@@ -77,7 +77,7 @@ public class NotificationService {
 			e.registryItem = wishListService.registryItem(e.giftId);
 		});
 
-		for (WishlistUser user : userDao.findAll()) {
+		for (Account user : userDao.findAll()) {
 			
 			if (StringUtils.isBlank(user.getEmail()))
 				continue;

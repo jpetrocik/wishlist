@@ -5,21 +5,26 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpSession;
 
-import org.psoft.wishlist.dao.UserDao;
-import org.psoft.wishlist.dao.data.WishlistUser;
+import org.apache.commons.lang3.StringUtils;
+import org.psoft.wishlist.dao.AccountDao;
+import org.psoft.wishlist.dao.data.Account;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.plivo.api.PlivoClient;
 
 @Component
 public class AccountService {
 
 	@Autowired
-	UserDao accountDao;
+	AccountDao accountDao;
 
-	@Autowired
-	PlivoClient plivoClient;
+	public Account register(String email) {
+		String name = StringUtils.substringBefore(email, "@");
+		return accountDao.register(email, name);
+	}
+
+	public Account register(String email, String name) {
+		return accountDao.register(email, name);
+	}
 
 	public String sendMFAMessage(String phone) throws Exception {
 		return accountDao.generateMFAToken(
@@ -31,18 +36,18 @@ public class AccountService {
 	}
 
 	public void authenicateUser(String authenticationToken, HttpSession session) {
-		WishlistUser wishListUser = accountDao.validateAuthtoken(authenticationToken);
+		Account wishListUser = accountDao.validateAuthtoken(authenticationToken);
 
 		authenicateUser(wishListUser, session);
 	}
 
 	public void authenicateUser(int accountId, HttpSession session) {
-		WishlistUser wishListUser = accountDao.findById(accountId);
+		Account wishListUser = accountDao.findById(accountId);
 
 		authenicateUser(wishListUser, session);
 	}
 
-	private void authenicateUser(WishlistUser wishListUser, HttpSession session) {
+	private void authenicateUser(Account wishListUser, HttpSession session) {
 		session.setAttribute("user", wishListUser);
 	}
 

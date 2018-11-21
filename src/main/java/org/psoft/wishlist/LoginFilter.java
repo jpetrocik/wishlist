@@ -16,14 +16,14 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
-import org.psoft.wishlist.dao.UserDao;
-import org.psoft.wishlist.dao.data.WishlistUser;
+import org.psoft.wishlist.dao.AccountDao;
+import org.psoft.wishlist.dao.data.Account;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class LoginFilter implements Filter {
 
 	@Autowired
-	UserDao userDao;
+	AccountDao userDao;
 
 	@Override
 	public void destroy() {
@@ -71,13 +71,13 @@ public class LoginFilter implements Filter {
 		    authCookie.setMaxAge(180 * 24 * 60 * 60);
 		    response.addCookie(authCookie);
 
-			WishlistUser wishlistUser = userDao.validateAuthtoken(authorizationToken);
+			Account wishlistUser = userDao.validateAuthtoken(authorizationToken);
 	    	session.setAttribute("user", wishlistUser);
 		}
 
 		String authToken = request.getParameter("authorizationToken");
 		if (authToken != null) {
-			WishlistUser wishlistUser = userDao.validateAuthtoken(authToken);
+			Account wishlistUser = userDao.validateAuthtoken(authToken);
 		    if (wishlistUser == null){
 		    	response.sendError(403, "Unauthorized");
 		        return;
@@ -106,7 +106,7 @@ public class LoginFilter implements Filter {
 		        return;
 		    }
 
-			WishlistUser wishlistUser = userDao.validateAuthtoken(authorizationToken);
+			Account wishlistUser = userDao.validateAuthtoken(authorizationToken);
 		    if (wishlistUser == null){
 		    	response.sendError(403, "Unauthorized");
 		        return;

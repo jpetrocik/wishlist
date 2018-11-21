@@ -9,7 +9,7 @@ import org.psoft.wishlist.dao.data.RegistryItem;
 
 public class TestWishListDao {
 
-	WishListDao uut;
+	RegistryDao uut;
 	
 	int giftId;
 
@@ -21,7 +21,7 @@ public class TestWishListDao {
 		dataSource.setUsername("");
 		dataSource.setPassword("");
 		
-		uut = new WishListDao();
+		uut = new RegistryDao();
 		uut.dataSource = dataSource;
 	}
 

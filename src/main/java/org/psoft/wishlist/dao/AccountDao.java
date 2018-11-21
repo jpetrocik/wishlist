@@ -12,7 +12,7 @@ import javax.sql.DataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.psoft.wishlist.dao.data.WishlistUser;
+import org.psoft.wishlist.dao.data.Account;
 import org.psoft.wishlist.util.TokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -26,8 +26,8 @@ import com.plivo.api.PlivoClient;
 import com.plivo.api.models.message.Message;
 
 @Component
-public class UserDao {
-	private static Log log = LogFactory.getLog(UserDao.class);
+public class AccountDao {
+	private static Log log = LogFactory.getLog(AccountDao.class);
 
 	@Autowired
 	DataSource dataSource;
@@ -37,13 +37,13 @@ public class UserDao {
 
 	JdbcTemplate jdbcTemplate;
 
-	WishlistUserRowMapper wishlistUserRowMapper = new WishlistUserRowMapper();
+	AccountRowMapper wishlistUserRowMapper = new AccountRowMapper();
 
 	SimpleJdbcInsert jdbcWishListUserInsert;
 
 	SimpleJdbcInsert jdbcSmsTokenInsert;
 
-	public UserDao() {
+	public AccountDao() {
 	}
 
 	@PostConstruct
@@ -58,7 +58,7 @@ public class UserDao {
 
 	}
 
-	public WishlistUser findByEmail(String email){
+	public Account findByEmail(String email){
 		try {
 			return jdbcTemplate.queryForObject(
 				    "select * from WISHLIST_USER where EMAIL=?",
@@ -68,7 +68,7 @@ public class UserDao {
 		}
 	}
 
-	public WishlistUser findByPhone(String phone){
+	public Account findByPhone(String phone){
 		try {
 			return jdbcTemplate.queryForObject(
 				    "select * from WISHLIST_USER where PHONE=?",
@@ -78,7 +78,7 @@ public class UserDao {
 		}
 	}
 
-	public WishlistUser findById(int id) {
+	public Account findById(int id) {
 		try {
 			return jdbcTemplate.queryForObject(
 				    "select * from WISHLIST_USER where ID=?",
@@ -88,12 +88,12 @@ public class UserDao {
 		}
 	}
 
-	public Collection<WishlistUser> findAll(){
+	public Collection<Account> findAll(){
 		return jdbcTemplate.query(
 			    "select * from WISHLIST_USER", wishlistUserRowMapper);
 	}
 
-	public WishlistUser register(String email, String name){
+	public Account register(String email, String name){
 		String token = TokenGenerator.createToken(10);
 		String authorizationToken = TokenGenerator.createToken(25);
 
@@ -104,12 +104,12 @@ public class UserDao {
         parameters.put("AUTHORIZATION_TOKEN", authorizationToken);
 
         Number key = jdbcWishListUserInsert.executeAndReturnKey(new MapSqlParameterSource(parameters));
-        return new WishlistUser(key.intValue(), name, email);
+        return new Account(key.intValue(), name, email);
 
 	}
 
 	public String generateMFAToken(String phone) throws Exception {
-		WishlistUser account = findByPhone(phone);
+		Account account = findByPhone(phone);
 
 		if (account == null)
 			throw new AccountException();
@@ -138,7 +138,7 @@ public class UserDao {
 
 
 
-	public WishlistUser validateAuthtoken(String authToken) {
+	public Account validateAuthtoken(String authToken) {
 		return jdbcTemplate.queryForObject(
 			    "select * from WISHLIST_USER where AUTHORIZATION_TOKEN=?",
 			    new Object[] { authToken }, wishlistUserRowMapper);
@@ -173,11 +173,11 @@ public class UserDao {
 	}
 
 
-	public class WishlistUserRowMapper implements RowMapper<WishlistUser> {
+	public class AccountRowMapper implements RowMapper<Account> {
 
 		@Override
-	    public WishlistUser mapRow(ResultSet results, int rowNum) throws SQLException {
-			WishlistUser wishlistUser = new WishlistUser(
+	    public Account mapRow(ResultSet results, int rowNum) throws SQLException {
+			Account wishlistUser = new Account(
 					results.getInt("ID"),
 					results.getString("NAME"),
 					results.getString("EMAIL"));
