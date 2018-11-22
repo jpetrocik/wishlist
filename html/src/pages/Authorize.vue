@@ -72,7 +72,7 @@ export default {
 
 	    this.$axios({
 	        method: 'GET',
-	        url: '/api/resend/invitation',
+	        url: '/api/invitation/xmas/resend',
 	        params: { 
 	        	email: this.email,
 	        	token: 'xmas'
