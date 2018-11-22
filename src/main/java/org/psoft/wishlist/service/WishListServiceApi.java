@@ -149,7 +149,7 @@ public class WishListServiceApi {
 	/**
 	 * Resends an existing invitation.
 	 */
-	@RequestMapping(path="/api/invitation/{token}/resend/", method=RequestMethod.POST)
+	@RequestMapping(path="/api/invitation/{token}/resend", method=RequestMethod.POST)
 	public ResponseEntity<Void> resendInvitation(@PathVariable String token, @RequestParam String email, HttpSession session){
 
 		registryService.resendInvitation(email, token);
