@@ -71,11 +71,10 @@ export default {
     	let vue = this
 
 	    this.$axios({
-	        method: 'GET',
-	        url: '/api/invitation/xmas/resend',
+	        method: 'POST',
+	        url: '/api/group/xmas/invitation',
 	        params: { 
-	        	email: this.email,
-	        	token: 'xmas'
+	        	email: this.email
 	        }
 	    }).then(function(response) {
 	    	vue.emailSent = true

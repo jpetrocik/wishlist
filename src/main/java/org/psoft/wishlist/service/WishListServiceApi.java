@@ -245,7 +245,7 @@ public class WishListServiceApi {
 		return ResponseEntity.ok(groupToken);
 	}
 
-	@RequestMapping(path="/api/group/{token}/invitation/", method=RequestMethod.POST)
+	@RequestMapping(path="/api/group/{token}/invitation", method=RequestMethod.POST)
 	public ResponseEntity<Void> sendGroupInvitation(@PathVariable String token, @RequestParam String email, HttpSession session){
 		registryService.sendInvitation(email, token);
 		return ResponseEntity.ok().build();
