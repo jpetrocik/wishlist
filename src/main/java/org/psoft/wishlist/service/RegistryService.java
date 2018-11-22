@@ -114,7 +114,7 @@ public class RegistryService {
 	}
 
 	public RegistryItem addRegistryItem(int registryId, int userId, RegistryItem registryItem) {
-		boolean isOwner = isOwner(registryId, userId);
+		boolean isOwner = isOwner(userId, registryId);
 		registryItem.setSecret(!isOwner);
 
 		return wishListDao.createRegsitryItem(registryId, userId, registryItem);
