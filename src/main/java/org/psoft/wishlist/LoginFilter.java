@@ -38,11 +38,11 @@ public class LoginFilter implements Filter {
 	     String path = request.getServletPath();
 
 	    //unsecured assets
-	    if ( StringUtils.startsWith(path, "/api/invitation/") ||
+	    if ( StringUtils.startsWith(path, "/api/invitation") ||
 	    		StringUtils.startsWith(path, "/api/start") ||
 	    		StringUtils.startsWith(path, "/api/register") ||
 	    		StringUtils.startsWith(path, "/api/mfa") ||
-	    		StringUtils.startsWith(path, "/api/resend/invitation")) {
+	    		StringUtils.startsWith(path, "/api/group")) {
 
 		    filterChain.doFilter(_request, _response);
 		    return;
