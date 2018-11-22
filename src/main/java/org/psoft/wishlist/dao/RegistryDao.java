@@ -147,7 +147,7 @@ public class RegistryDao {
 	public RegistryItem createRegsitryItem(int registryId, int userId, RegistryItem gift) {
 		Map<String, Object> parameters = new HashMap<>();
         parameters.put("REGISTRY_ID", registryId);
-        parameters.put("OWNER_ID", registryId);
+        parameters.put("OWNER_ID", userId);
         parameters.put("DESCR", gift.getDescr());
         parameters.put("IS_SECRET", gift.isSecret());
         parameters.put("URL", gift.getUrl());
