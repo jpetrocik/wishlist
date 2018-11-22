@@ -31,88 +31,90 @@ public class LoginFilter implements Filter {
 
 	@Override
 	public void doFilter(ServletRequest _request, ServletResponse _response, FilterChain filterChain) throws IOException, ServletException {
-		 HttpServletRequest request = (HttpServletRequest) _request;
-	     HttpServletResponse response = (HttpServletResponse) _response;
-	     HttpSession session = request.getSession();
+			HttpServletRequest request = (HttpServletRequest) _request;
+			HttpServletResponse response = (HttpServletResponse) _response;
+			HttpSession session = request.getSession();
 
-	     String path = request.getServletPath();
+		String path = request.getServletPath();
 
-	    //unsecured assets
-	    if ( StringUtils.startsWith(path, "/api/invitation") ||
-	    		StringUtils.startsWith(path, "/api/start") ||
-	    		StringUtils.startsWith(path, "/api/register") ||
-	    		StringUtils.startsWith(path, "/api/mfa") ||
-	    		StringUtils.startsWith(path, "/api/group")) {
-
-		    filterChain.doFilter(_request, _response);
-		    return;
-
-		//signouts
-	    } else if (StringUtils.startsWith(path, "/signout")) {
-			session.removeAttribute("user");
-			response.setStatus(200);
-		    return;
-	    }
-
-    	//user invitation login, check for user/token in params
-	    //always login if provided
-		String email = request.getParameter("email");
-		String token = request.getParameter("token");
-		if (email != null && token != null) {
-			String authorizationToken = userDao.validateUser(email, token);
-		    if (authorizationToken == null){
-		    	response.sendError(403, "Unauthorized");
-		        return;
-		    }
-
-		    //return auth cookie for later remeber me
-		    Cookie authCookie = new Cookie("user-token", authorizationToken);
-		    authCookie.setPath("/");
-		    authCookie.setMaxAge(180 * 24 * 60 * 60);
-		    response.addCookie(authCookie);
-
-			Account wishlistUser = userDao.validateAuthtoken(authorizationToken);
-	    	session.setAttribute("user", wishlistUser);
-		}
-
+		//check is authentication is being requested
 		String authToken = request.getParameter("authorizationToken");
 		if (authToken != null) {
 			Account wishlistUser = userDao.validateAuthtoken(authToken);
-		    if (wishlistUser == null){
-		    	response.sendError(403, "Unauthorized");
-		        return;
-		    }
-
-		    //return auth cookie for later remeber me
-		    Cookie authCookie = new Cookie("user-token", authToken);
-		    authCookie.setPath("/");
-		    authCookie.setMaxAge(180 * 24 * 60 * 60);
-		    response.addCookie(authCookie);
-
-	    	session.setAttribute("user", wishlistUser);
-
-		}
-
-	    if ( session.getAttribute("user") == null ) {
-
-			//check cookie auth
-			String authorizationToken = checkAuthCookie(request.getCookies());
-			if (StringUtils.isBlank(authorizationToken)) {
-				authorizationToken = request.getHeader("auth-token");
+			if (wishlistUser == null){
+				response.sendError(403, "Unauthorized");
+				return;
 			}
 
-		    if (StringUtils.isBlank(authorizationToken)){
-		    	response.sendError(403, "Unauthorized");
-		        return;
-		    }
+			//return auth cookie for later remeber me
+			Cookie authCookie = new Cookie("user-token", authToken);
+			authCookie.setPath("/");
+			authCookie.setMaxAge(180 * 24 * 60 * 60);
+			response.addCookie(authCookie);
 
-			Account wishlistUser = userDao.validateAuthtoken(authorizationToken);
-		    if (wishlistUser == null){
+			session.setAttribute("user", wishlistUser);
+		}
+
+		//check is cookie or header available and user in not authenticated
+		if ( session.getAttribute("user") == null ) {
+
+			//check cookie auth then check header
+			String authorizationToken = checkAuthCookie(request.getCookies());
+			if (StringUtils.isNotBlank(authorizationToken)){
+				Account wishlistUser = userDao.validateAuthtoken(authorizationToken);
+				if (wishlistUser != null){
+					session.setAttribute("user", wishlistUser);
+				}
+			}
+		}
+
+		//unsecured assets
+		if ( (path != null) && (path.startsWith("/api/invitation") ||
+				path.startsWith("/api/start") ||
+				path.startsWith("/api/register") ||
+				path.startsWith("/api/mfa") ||
+				path.matches("/api/group/(.*)/invitation"))) {
+
+			filterChain.doFilter(_request, _response);
+			return;
+
+			//signouts
+		} else if (StringUtils.startsWith(path, "/signout")) {
+			session.removeAttribute("user");
+			response.setStatus(200);
+			return;
+		}
+
+		//    	//user invitation login, check for user/token in params
+		//	    //always login if provided
+		//		String email = request.getParameter("email");
+		//		String token = request.getParameter("token");
+		//		if (email != null && token != null) {
+		//			String authorizationToken = userDao.validateUser(email, token);
+		//		    if (authorizationToken == null){
+		//		    	response.sendError(403, "Unauthorized");
+		//		        return;
+		//		    }
+		//
+		//		    //return auth cookie for later remeber me
+		//		    Cookie authCookie = new Cookie("user-token", authorizationToken);
+		//		    authCookie.setPath("/");
+		//		    authCookie.setMaxAge(180 * 24 * 60 * 60);
+		//		    response.addCookie(authCookie);
+		//
+		//			Account wishlistUser = userDao.validateAuthtoken(authorizationToken);
+		//	    	session.setAttribute("user", wishlistUser);
+		//		}
+		//
+		//		if (StringUtils.isBlank(authorizationToken)) {
+		//			authorizationToken = request.getHeader("auth-token");
+		//		}
+
+
+		if ( session.getAttribute("user") == null ) {
 		    	response.sendError(403, "Unauthorized");
 		        return;
-		    }
-	    	session.setAttribute("user", wishlistUser);
-	    }
+		}
 
 		filterChain.doFilter(_request, _response);
 	}
