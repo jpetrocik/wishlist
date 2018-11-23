@@ -124,6 +124,10 @@ public class RegistryService {
 		return wishListDao.updateRegistryItem(ownerId, registryItemId, registryItem);
 	}
 
+	public void deleteRegistryItem(int ownerId, int registryItemId) {
+		wishListDao.deleteRegistryItem(ownerId, registryItemId);
+	}
+
 	public void purchasedRegistryItem(int registryItemId, String name) {
 		wishListDao.purchasedRegistryItem(registryItemId, name);
 	}
@@ -224,4 +228,5 @@ public class RegistryService {
 	public RegistryItem registryItem(int giftId) {
 		return wishListDao.registryItem(giftId);
 	}
+
 }

@@ -237,6 +237,24 @@ public class WishListServiceApi {
 
 	}
 
+	/**
+	 * Delete registry item
+	 */
+	@RequestMapping(path="/api/registry/{registryId}/item/{registryItemId}", method=RequestMethod.DELETE)
+	public ResponseEntity<Void> deleteRegistryItem(@PathVariable int registryId, @PathVariable int registryItemId, HttpSession session){
+		Account wishlistUser = (Account)session.getAttribute("user");
+
+		boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registryId);
+		if (!invitationExists) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+
+		registryService.deleteRegistryItem(wishlistUser.getId(), registryItemId);
+
+		return ResponseEntity.ok().build();
+
+	}
+
 	@RequestMapping(path="/api/group/{token}", method=RequestMethod.POST)
 	public ResponseEntity<String> createGroup(@PathVariable String token, @RequestParam String[] email, HttpSession session){
 		Account wishlistUser = (Account)session.getAttribute("user");

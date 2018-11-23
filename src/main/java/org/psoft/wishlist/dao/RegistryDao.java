@@ -133,13 +133,13 @@ public class RegistryDao {
 	}
 
 	public List<RegistryItem> registryItems(int registryId) {
-		List<RegistryItem> wishList  = jdbcTemplate.query("select * from REGISTRY_ITEMS where REGISTRY_ID=? ORDER BY ID asc",
+		List<RegistryItem> wishList  = jdbcTemplate.query("select * from REGISTRY_ITEMS where ACTIVE=1 AND REGISTRY_ID=? ORDER BY ID asc",
 				new Object[] { registryId }, registryItemRowMapper);
 		return wishList;
 	}
 
 	public RegistryItem registryItem(long giftId) {
-		RegistryItem registryItem  = jdbcTemplate.queryForObject("select * from REGISTRY_ITEMS where  ID=?",
+		RegistryItem registryItem  = jdbcTemplate.queryForObject("select * from REGISTRY_ITEMS where ID=?",
 				new Object[] { giftId }, registryItemRowMapper);
 		return registryItem;
 	}
@@ -163,6 +163,11 @@ public class RegistryDao {
 				gift.getDescr(), gift.getUrl(), registryItemId, ownerId);
 
 		return registryItem(registryItemId);
+	}
+
+	public void deleteRegistryItem(int ownerId, int registryItemId) {
+		jdbcTemplate.update("update REGISTRY_ITEMS set ACTIVE=0 where ID=? and OWNER_ID=?",
+				registryItemId, ownerId);
 	}
 
 	public Registry updateRegistry(int ownerId, int registryId, Registry registry) {

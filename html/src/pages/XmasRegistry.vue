@@ -19,7 +19,7 @@
 		  	<div class="giftEdit">
 		  	<div><textarea class="giftEditDescr xmasInput" v-model="g.descr"></textarea></div>
 		  	<div><input class="giftEditUrl xmasInput" v-model="g.url"/></div>
-		  	<div><input type="button" class="xmasButton" value="Save" @click="selected = undefined;updateGift(g)"/><input class="cancel" type="button" @click="selected = undefined" value="Cancel"></div>
+		  	<div><input type="button" class="xmasButton" value="Save" @click="selected = undefined;updateGift(g)"/><input class="xmasButton cancel" type="button" @click="selected = undefined" value="Cancel"><input class="xmasButton cancel delete" type="button" @click="selected = undefined;deleteGift(g.id, index)" value="Delete"></div>
 		  	</div>
   	  </div>
   	</div>
@@ -113,6 +113,17 @@ export default {
 
 	    }).then(function(response) {
 	    })
+	},
+	deleteGift(giftId, index) {
+        let vue = this
+
+	    this.$axios({
+	        method: 'DELETE',
+	        url: '/api/registry/' + vue.activeRegistry.id + '/item/' + giftId
+	    }).then(function(response) {
+	     	vue.gifts.splice(index, 1)
+	    })
+
 	},
   	addGift() {
         let vue = this

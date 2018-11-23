@@ -69,6 +69,11 @@ h2 {
 	margin: 3px;
 }
 
+.xmasButton.cancel {
+	background-color: #eee;
+	color: #000;
+}
+
 .xmasInput {
 	width: 100%;
 	border-radius: 3px;
@@ -138,11 +143,9 @@ h2 {
 	vertical-align: middle;
 }
 
-.gift input[type=button].cancel {
-	background-color: #eee;
-	color: #000;
+.gift input[type=button].delete {
+	float:right;
 }
-
 .giftLink {
 	margin-left:15px;
 }
@@ -156,11 +159,9 @@ h2 {
 	float:left;
 	height: 65px;
 	margin-right: 5px;
-	/* vertical-align: middle; */
 }
 
 #addGift div {
-	/* margin: 10px 0 10px 0; */
 }
 
 #addGift textarea {
