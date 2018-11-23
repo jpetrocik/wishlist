@@ -151,6 +151,7 @@ public class RegistryDao {
         parameters.put("DESCR", gift.getDescr());
         parameters.put("IS_SECRET", gift.isSecret());
         parameters.put("IS_PURCHASED", false);
+        parameters.put("ACTIVE", true);
         parameters.put("URL", gift.getUrl());
 
         Number key = jdbcRegistryItemsInsert.executeAndReturnKey(new MapSqlParameterSource(parameters));
