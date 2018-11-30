@@ -21,7 +21,7 @@ public class EmailerService {
 			return;
 		}
 		Process process = Runtime.getRuntime().exec(new String[] {"/usr/bin/mail",
-				"-a", from,
+				"-r", from,
 				"-s", subject,
 				to});
 		
