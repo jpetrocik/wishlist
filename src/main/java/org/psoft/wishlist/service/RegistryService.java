@@ -158,7 +158,7 @@ public class RegistryService {
 			//add registry to group
 			wishListDao.createGroup(token, invitation.getRegistryId());
 
-			sendInvitation(token, e);
+			sendInvitation(e, token);
 		}
 
 		//Create invitation to the existing registry in the group and add
@@ -210,13 +210,14 @@ public class RegistryService {
 	 *
 	 * TODO Use template for email
 	 */
-	public void sendInvitation(String email, String token) {
+	public boolean sendInvitation(String email, String token) {
 		Account invitedUser = accountDao.findByEmail(email);
 		if (invitedUser == null) {
-			invitedUser = accountService.register(email, StringUtils.substringBefore(email, "@"));
+			return false;
 		}
 
 		internalSendInvitation(invitedUser, token);
+		return true;
 	}
 
 	private void internalSendInvitation(Account invitedUser, String token) {
