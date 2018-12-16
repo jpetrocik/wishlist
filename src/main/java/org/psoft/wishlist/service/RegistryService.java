@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.psoft.wishlist.dao.AccountDao;
 import org.psoft.wishlist.dao.RegistryDao;
 import org.psoft.wishlist.dao.data.Account;
 import org.psoft.wishlist.dao.data.Invitation;
@@ -25,13 +24,10 @@ public class RegistryService {
 	AccountService accountService;
 
 	@Autowired
-	AccountDao accountDao;
-
-	@Autowired
 	EmailerService emailer;
 
 	public Invitation startNewRegistry(String email) {
-		Account account = accountDao.findByEmail(email);
+		Account account = accountService.findByEmail(email);
 		if (account == null) {
 			account = accountService.register(email);
 		}
@@ -41,7 +37,7 @@ public class RegistryService {
 	}
 
 	public Invitation createRegistry(int ownerId, String name) {
-		Account owner = accountDao.findById(ownerId);
+		Account owner = accountService.findById(ownerId);
 		if (owner == null) {
 			return null;
 		}
@@ -64,7 +60,7 @@ public class RegistryService {
 	}
 
 	public Invitation createInvitation(int registryId, String email) {
-		Account invitedUser = accountDao.findByEmail(email);
+		Account invitedUser = accountService.findByEmail(email);
 		if (invitedUser == null) {
 			invitedUser = accountService.register(email, StringUtils.substringBefore(email, "@"));
 		}
@@ -148,7 +144,7 @@ public class RegistryService {
 
 		//create registry and add to group
 		for (String e: emails){
-			Account wishListUser = accountDao.findByEmail(e);
+			Account wishListUser = accountService.findByEmail(e);
 			if (wishListUser == null) {
 				wishListUser = accountService.register(e);
 			}
@@ -196,7 +192,7 @@ public class RegistryService {
 	 * TODO Use template for email
 	 */
 	public void resendInvitation(String email, String token) {
-		Account account = accountDao.findByEmail(email);
+		Account account = accountService.findByEmail(email);
 		if (account == null)
 			return;
 
@@ -211,7 +207,7 @@ public class RegistryService {
 	 * TODO Use template for email
 	 */
 	public boolean sendInvitation(String email, String token) {
-		Account invitedUser = accountDao.findByEmail(email);
+		Account invitedUser = accountService.findByEmail(email);
 		if (invitedUser == null) {
 			return false;
 		}
@@ -221,7 +217,7 @@ public class RegistryService {
 	}
 
 	private void internalSendInvitation(Account invitedUser, String token) {
-		String authorizationToken = accountDao.generateUserAuthToken(invitedUser.getId());
+		String authorizationToken = accountService.lookupUserAuthToken(invitedUser.getId());
 		sendInvitationEmail(invitedUser.getEmail(), token + " Wish List Invitation",
 			"Use this link to access the " + token + " Wish List.\n\nhttp://gifts.petrocik.net/#/" + token + "?authorizationToken=" + authorizationToken);
 	}

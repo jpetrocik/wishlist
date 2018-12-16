@@ -263,6 +263,42 @@ public class WishListServiceApi {
 		return ResponseEntity.ok(groupToken);
 	}
 
+	@RequestMapping(path="/api/group/{token}/invitation", method=RequestMethod.PUT)
+	public ResponseEntity<Void> inviteUserToGroup(@PathVariable String token, @RequestParam String email, HttpSession session){
+		Account wishlistUser = (Account)session.getAttribute("user");
+
+		//load registry for this group
+		List<Registry> groupRegistry = registryService.groupRegistries(token);
+		if (groupRegistry == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+		}
+
+		//remove any registries the authenticate account does not have an invitation for
+		Iterator<Registry> iterator = groupRegistry.iterator();
+		while (iterator.hasNext()) {
+			Registry registry = iterator.next();
+			boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registry.getId());
+			if (!invitationExists) {
+				iterator.remove();
+			}
+		}
+
+		if (groupRegistry.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+
+		//create account and create invitations
+		Account newAccount = accountService.register(email);
+		for (Registry registry : groupRegistry){
+			registryService.createInvitation(registry.getId(), newAccount.getId());
+		}
+
+		//send invitations to group
+		registryService.sendInvitation(email, token);
+
+		return ResponseEntity.ok().build();
+	}
+
 	@RequestMapping(path="/api/group/{token}/invitation", method=RequestMethod.POST)
 	public ResponseEntity<Void> sendGroupInvitation(@PathVariable String token, @RequestParam String email, HttpSession session){
 		registryService.sendInvitation(email, token);

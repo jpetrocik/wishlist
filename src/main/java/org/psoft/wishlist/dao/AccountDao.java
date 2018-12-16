@@ -130,11 +130,11 @@ public class AccountDao {
 			    "select ACCOUNT_ID from MFA_TOKEN where CODE=? AND TOKEN=? AND UNIX_TIMESTAMP(EXPIRES)>?",
 			    new Object[] { code, token, System.currentTimeMillis()/1000l  }, String.class);
 
-		return generateUserAuthToken(Integer.parseInt(accountId));
+		return lookupAuthToken(Integer.parseInt(accountId));
 
 	}
 
-	public String generateUserAuthToken(int id) {
+	public String lookupAuthToken(int id) {
 		return jdbcTemplate.queryForObject(
 			    "select AUTHORIZATION_TOKEN from WISHLIST_USER where ID=?",
 			    new Object[] { id }, new RowMapper<String>() {

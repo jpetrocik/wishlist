@@ -94,4 +94,16 @@ public class AccountService {
 		return phone.toString();
 	}
 
+	public String lookupUserAuthToken(int accountId) {
+		return accountDao.lookupAuthToken(accountId);
+	}
+
+	public Account findByEmail(String email) {
+		return accountDao.findByEmail(email);
+	}
+
+	public Account findById(int accountId) {
+		return accountDao.findById(accountId);
+	}
+
 }

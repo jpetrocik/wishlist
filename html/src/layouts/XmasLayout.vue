@@ -9,7 +9,7 @@
 <script>
 
 export default {
-  name: 'MyLayout',
+  name: 'XMasLayout',
   data () {
     return {
     }
