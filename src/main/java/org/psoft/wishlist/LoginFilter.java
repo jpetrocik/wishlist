@@ -68,7 +68,7 @@ public class LoginFilter implements Filter {
 			}
 		}
 
-		//unsecured assets
+		//check access to unsecured assets
 		if ( (path != null) && (path.startsWith("/api/invitation") ||
 				path.startsWith("/api/start") ||
 				path.startsWith("/api/register") ||
@@ -78,42 +78,17 @@ public class LoginFilter implements Filter {
 			filterChain.doFilter(_request, _response);
 			return;
 
-			//signouts
+		//sign out
 		} else if (StringUtils.startsWith(path, "/signout")) {
 			session.removeAttribute("user");
 			response.setStatus(200);
 			return;
 		}
 
-		//    	//user invitation login, check for user/token in params
-		//	    //always login if provided
-		//		String email = request.getParameter("email");
-		//		String token = request.getParameter("token");
-		//		if (email != null && token != null) {
-		//			String authorizationToken = userDao.validateUser(email, token);
-		//		    if (authorizationToken == null){
-		//		    	response.sendError(403, "Unauthorized");
-		//		        return;
-		//		    }
-		//
-		//		    //return auth cookie for later remeber me
-		//		    Cookie authCookie = new Cookie("user-token", authorizationToken);
-		//		    authCookie.setPath("/");
-		//		    authCookie.setMaxAge(180 * 24 * 60 * 60);
-		//		    response.addCookie(authCookie);
-		//
-		//			Account wishlistUser = userDao.validateAuthtoken(authorizationToken);
-		//	    	session.setAttribute("user", wishlistUser);
-		//		}
-		//
-		//		if (StringUtils.isBlank(authorizationToken)) {
-		//			authorizationToken = request.getHeader("auth-token");
-		//		}
-
-
+		//reject access
 		if ( session.getAttribute("user") == null ) {
-		    	response.sendError(403, "Unauthorized");
-		        return;
+	    	response.sendError(403, "Unauthorized");
+	        return;
 		}
 
 		filterChain.doFilter(_request, _response);

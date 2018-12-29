@@ -51,7 +51,6 @@
 <script>
 
 export default {
-  name: 'PageStartRegistry',
   data(){
     return {
         registries: [],

@@ -11,7 +11,6 @@ import javax.sql.DataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.psoft.wishlist.dao.data.Invitation;
 import org.psoft.wishlist.dao.data.Registry;
 import org.psoft.wishlist.dao.data.RegistryItem;
 import org.psoft.wishlist.util.TokenGenerator;
@@ -36,11 +35,7 @@ public class RegistryDao {
 
 	SimpleJdbcInsert jdbcRegistryItemsInsert;
 
-	SimpleJdbcInsert jdbcInvitationInsert;
-
 	SimpleJdbcInsert jdbcRegistryGroupInsert;
-
-	InvitationRowMapper invitationRowMapper = new InvitationRowMapper();
 
 	RegistryItemRowMapper registryItemRowMapper = new RegistryItemRowMapper();
 
@@ -58,9 +53,6 @@ public class RegistryDao {
 
 		jdbcRegistryItemsInsert = new SimpleJdbcInsert(jdbcTemplate);
 		jdbcRegistryItemsInsert.withTableName("REGISTRY_ITEMS").usingGeneratedKeyColumns("ID");
-
-		jdbcInvitationInsert = new SimpleJdbcInsert(jdbcTemplate);
-		jdbcInvitationInsert.withTableName("REGISTRY_INVITATION").usingGeneratedKeyColumns("ID");
 
 		jdbcRegistryGroupInsert = new SimpleJdbcInsert(jdbcTemplate);
 		jdbcRegistryGroupInsert.withTableName("REGISTRY_GROUP");
@@ -84,7 +76,7 @@ public class RegistryDao {
 		return registry;
 	}
 
-	public Registry xxx_registry(String token) {
+	public Registry registryByToken(String token) {
 		try {
 			Registry registry = jdbcTemplate.queryForObject("select * from REGISTRY where TOKEN=?",
 					new Object[] { token}, registryRowMapper);
@@ -94,43 +86,11 @@ public class RegistryDao {
 		}
 	}
 
-	public Invitation createInvitation(int registryId, int invitedUserId) {
-        String token = TokenGenerator.createToken(25);
-
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("REGISTRY_ID", registryId);
-        parameters.put("INVITED_USER_ID", invitedUserId);
-		parameters.put("TOKEN", token);
-
-        Number key = jdbcInvitationInsert.executeAndReturnKey(new MapSqlParameterSource(parameters));
-        return new Invitation(key.intValue(), registryId, invitedUserId, token);
-	}
-
-	public Invitation invitation(int registryId, int invitedUserId) {
-		try {
-			Invitation invitation = jdbcTemplate.queryForObject("select * from REGISTRY_INVITATION where REGISTRY_ID=? AND INVITED_USER_ID=?",
-					new Object[] { registryId, invitedUserId}, invitationRowMapper);
-			return invitation;
-		} catch (EmptyResultDataAccessException e) {
-			return null;
-		}
-	}
-
-	public Invitation invitation(String token) {
-		try {
-			Invitation invitation = jdbcTemplate.queryForObject("select * from REGISTRY_INVITATION where TOKEN=?",
-					new Object[] { token }, invitationRowMapper);
-			return invitation;
-		} catch (EmptyResultDataAccessException e) {
-			return null;
-		}
-	}
-
-	public Registry defaultRegistry(int userId) {
-		Registry registry  = jdbcTemplate.queryForObject("select * from REGISTRY where OWNER_ID=? AND IS_DEFAULT=1 ORDER BY ID asc",
-				new Object[] { userId }, registryRowMapper);
-		return registry;
-	}
+//	public Registry defaultRegistry(int userId) {
+//		Registry registry  = jdbcTemplate.queryForObject("select * from REGISTRY where OWNER_ID=? AND IS_DEFAULT=1 ORDER BY ID asc",
+//				new Object[] { userId }, registryRowMapper);
+//		return registry;
+//	}
 
 	public List<RegistryItem> registryItems(int registryId) {
 		List<RegistryItem> wishList  = jdbcTemplate.query("select * from REGISTRY_ITEMS where ACTIVE=1 AND REGISTRY_ID=? ORDER BY ID asc",
@@ -223,13 +183,4 @@ public class RegistryDao {
 		}
 	}
 
-	public class InvitationRowMapper implements RowMapper<Invitation> {
-
-		@Override
-	    public Invitation mapRow(ResultSet rs, int rowNum) throws SQLException {
-			Invitation invitation = new Invitation(rs.getInt("ID"), rs.getInt("REGISTRY_ID"), rs.getInt("INVITED_USER_ID"),
-					rs.getString("TOKEN"));
-	        return invitation;
-	    }
-	}
 }
