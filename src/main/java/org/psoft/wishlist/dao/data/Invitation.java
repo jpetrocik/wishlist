@@ -1,20 +1,19 @@
 package org.psoft.wishlist.dao.data;
 
-import org.psoft.wishlist.util.TokenGenerator;
 
 public class Invitation {
 
 	final int id;
-	
-	final int registryId;
-	
+
+	final String tokenToAccess;
+
 	final int invitedUserId;
-	
+
 	final String token;
-	
-	public Invitation(int id, int registryId, int invitedUserId, String token) {
+
+	public Invitation(int id, String tokenToAccess, int invitedUserId, String token) {
 		this.id = id;
-		this.registryId = registryId;
+		this.tokenToAccess = tokenToAccess;
 		this.invitedUserId = invitedUserId;
 		this.token = token;
 	}
@@ -23,8 +22,8 @@ public class Invitation {
 		return id;
 	}
 
-	public int getRegistryId() {
-		return registryId;
+	public String getTokenToAccess() {
+		return tokenToAccess;
 	}
 
 	public int getInvitedUserId() {

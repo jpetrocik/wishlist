@@ -30,6 +30,9 @@ import com.google.common.eventbus.EventBus;
 public class WishListServiceApi {
 
 	@Autowired
+	InvitationService invitationService;
+
+	@Autowired
 	RegistryService registryService;
 
 	@Autowired
@@ -41,13 +44,16 @@ public class WishListServiceApi {
 	@Autowired
 	EventBus eventBus;
 
+	/**
+	 * Registers a new account
+	 */
 	@RequestMapping(path="/api/register", method=RequestMethod.POST)
 	public Account register(@RequestParam String email, @RequestParam String name, HttpSession session){
 		return accountService.register(email,name);
 	}
 
 	/**
-	 * Starts a new register, registers the email address if it has not been previously registered
+	 * Starts a new register and create a new account if it has not been previously registered
 	 */
 	@RequestMapping(path="/api/registry/start", method=RequestMethod.POST)
 	public Invitation startRegistry(@RequestParam String email, HttpSession session){
@@ -55,29 +61,18 @@ public class WishListServiceApi {
 	}
 
 	/**
-	 * Returns the default registry for the currently authenticated account.
-	 */
-	@RequestMapping(path="/api/registry/default", method=RequestMethod.GET)
-	public ResponseEntity<Registry> defaultUserRegsiter(HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
-
-		Registry registry = registryService.findDefaultRegistery(wishlistUser.getId());
-		return ResponseEntity.ok(registry);
-	}
-
-	/**
-	 * Returns the give registry
+	 * Returns the give registry if the current user has an invitation
 	 */
 	@RequestMapping(path="/api/registry/{registryId}", method=RequestMethod.GET)
 	public ResponseEntity<Registry> registry(@PathVariable int registryId, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
 
 		Registry registry = registryService.registry(registryId);
 		if (registry == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 		}
 
-		boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registry.getId());
+		boolean invitationExists = invitationService.hasInvitation(currentUser.getId(), registry.getToken());
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
@@ -86,45 +81,46 @@ public class WishListServiceApi {
 	}
 
 	/**
-	 * Creates a new registry for the authenticated account
+	 * Creates a new registry for the current user
 	 */
-	@RequestMapping(path="/api/registry/new", method=RequestMethod.POST)
+	@RequestMapping(path="/api/registry/", method=RequestMethod.POST)
 	public Invitation createRegsitry(@RequestParam String name, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
 
-		return registryService.createRegistry(wishlistUser.getId(), name);
+		return registryService.createRegistry(currentUser.getId(), name);
 	}
 
 	/**
-	 * Updates the registry
+	 * Updates the registry, must be owner to update the registry
 	 */
 	@RequestMapping(path="/api/registry/{registryId}", method=RequestMethod.PUT)
 	public ResponseEntity<Registry> updateRegsitry(@PathVariable int registryId, @RequestBody Registry registry, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
 
-		boolean isOwner = registryService.isOwner(wishlistUser.getId(), registryId);
+		boolean isOwner = registryService.isOwner(currentUser.getId(), registryId);
 		if (!isOwner) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
 
-		registry = registryService.updateRegistry(wishlistUser.getId(), registryId, registry);
+		registry = registryService.updateRegistry(currentUser.getId(), registryId, registry);
 		return ResponseEntity.ok(registry);
 	}
 
 	/**
-	 * Creates an invitation to a registry.  The authenticated account must be the owner to
+	 * Creates an invitation to a registry. The current user must be the owner to
 	 * create an invitation.
 	 */
 	@RequestMapping(path="/api/registry/{registryId}/invitation", method=RequestMethod.POST)
 	public ResponseEntity<Invitation> createInvitation(@PathVariable int registryId, @RequestParam  String email, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
 
-		boolean isOwner = registryService.isOwner(wishlistUser.getId(), registryId);
+		Registry registry = registryService.registry(registryId);
+		boolean isOwner = registryService.isOwner(currentUser.getId(), registry.getId());
 		if (!isOwner) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
 
-		Invitation invitation = registryService.createInvitation(registryId, email);
+		Invitation invitation = invitationService.createInvitation(registry.getToken(), email);
 
 		return ResponseEntity.ok(invitation);
 	}
@@ -135,13 +131,13 @@ public class WishListServiceApi {
 	@RequestMapping(path="/api/invitation/{token}", method=RequestMethod.GET)
 	public ResponseEntity<Registry> inventation(@PathVariable String token, HttpSession session){
 
-		Invitation invitation = registryService.invitation(token);
+		Invitation invitation = invitationService.invitation(token);
 		if (invitation == null)
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 
 		accountService.authenicateUser(invitation.getInvitedUserId(), session);
 
-		Registry registry = registryService.registry(invitation.getRegistryId());
+		Registry registry = registryService.registryByToken(invitation.getTokenToAccess());
 
 		return ResponseEntity.ok(registry);
 	}
@@ -152,20 +148,22 @@ public class WishListServiceApi {
 	@RequestMapping(path="/api/invitation/{token}/resend", method=RequestMethod.POST)
 	public ResponseEntity<Void> resendInvitation(@PathVariable String token, @RequestParam String email, HttpSession session){
 
-		registryService.resendInvitation(email, token);
+		registryService.sendInvitation(email, token);
 
 		return ResponseEntity.ok().build();
 	}
 
 
 	/**
-	 * Get registry items
+	 * Retrieves the items in the registry, must have an invitation
 	 */
 	@RequestMapping(path="/api/registry/{registryId}/item", method=RequestMethod.GET)
 	public ResponseEntity<List<RegistryItem>> registryItems(@PathVariable int registryId, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
+		Registry registry = registryService.registry(registryId);
 
-		boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registryId);
+
+		boolean invitationExists = invitationService.hasInvitation(currentUser.getId(), registry.getToken());
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
@@ -173,7 +171,7 @@ public class WishListServiceApi {
 		List<RegistryItem> wishlistItem = registryService.registryItems(registryId);
 
 		//filter secret gifts from owner
-		boolean isOwner = registryService.isOwner(wishlistUser.getId(), registryId);
+		boolean isOwner = registryService.isOwner(currentUser.getId(), registryId);
 		if (isOwner) {
 			wishlistItem = wishlistItem.stream().filter(g -> !g.isSecret()).collect(Collectors.toList());
 			wishlistItem.forEach(g -> g.setPurchased(false));
@@ -183,21 +181,22 @@ public class WishListServiceApi {
 	}
 
 	/**
-	 * Add registry item
+	 * Adds an item to the registry
 	 */
 	@RequestMapping(path="/api/registry/{registryId}/item", method=RequestMethod.POST)
 	public ResponseEntity<RegistryItem> addRegistryItem(@PathVariable int registryId, @RequestBody RegistryItem registryItem, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
+		Registry registry = registryService.registry(registryId);
 
-		boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registryId);
+		boolean invitationExists = invitationService.hasInvitation(currentUser.getId(), registry.getToken());
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
 
-		registryItem = registryService.addRegistryItem(registryId, wishlistUser.getId(), registryItem);
+		registryItem = registryService.addRegistryItem(registryId, currentUser.getId(), registryItem);
 
 		GiftAddEvent event = new GiftAddEvent();
-		event.who = wishlistUser.getName();
+		event.who = currentUser.getName();
 		event.registryId = registryId;
 		event.giftId = registryItem.getId();
 		eventBus.post(event);
@@ -205,6 +204,9 @@ public class WishListServiceApi {
 		return ResponseEntity.ok(registryItem);
 	}
 
+	/**
+	 * Fetches metadata from a URL
+	 */
 	@RequestMapping(path="/api/url", method=RequestMethod.POST)
 	public ResponseEntity<Map<String,String>> fetchMetadataInformation(@RequestParam String pageUrl, HttpSession session){
 
@@ -220,18 +222,19 @@ public class WishListServiceApi {
 	}
 
 	/**
-	 * Update registry item
+	 * Update a registry item, must be the owner of the item
 	 */
 	@RequestMapping(path="/api/registry/{registryId}/item/{registryItemId}", method=RequestMethod.PUT)
 	public ResponseEntity<RegistryItem> updateRegistryItem(@PathVariable int registryId, @PathVariable int registryItemId, @RequestBody RegistryItem registryItem, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
+		Registry registry = registryService.registry(registryId);
 
-		boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registryId);
+		boolean invitationExists = invitationService.hasInvitation(currentUser.getId(), registry.getToken());
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
 
-		registryService.updateRegistryItem(wishlistUser.getId(), registryItemId, registryItem);
+		registryService.updateRegistryItem(currentUser.getId(), registryItemId, registryItem);
 
 		return ResponseEntity.ok(registryItem);
 
@@ -242,30 +245,39 @@ public class WishListServiceApi {
 	 */
 	@RequestMapping(path="/api/registry/{registryId}/item/{registryItemId}", method=RequestMethod.DELETE)
 	public ResponseEntity<Void> deleteRegistryItem(@PathVariable int registryId, @PathVariable int registryItemId, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
+		Registry registry = registryService.registry(registryId);
 
-		boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registryId);
+		boolean invitationExists = invitationService.hasInvitation(currentUser.getId(), registry.getToken());
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
 
-		registryService.deleteRegistryItem(wishlistUser.getId(), registryItemId);
+		registryService.deleteRegistryItem(currentUser.getId(), registryItemId);
 
 		return ResponseEntity.ok().build();
 
 	}
 
+	/**
+	 * Creates a registry group and creates registries for each email. Will also registry email
+	 * if not previously registered
+	 */
 	@RequestMapping(path="/api/group/{token}", method=RequestMethod.POST)
 	public ResponseEntity<String> createGroup(@PathVariable String token, @RequestParam String[] email, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
 
-		String groupToken = registryService.createGroup(token, wishlistUser.getId(), email);
+		String groupToken = registryService.createGroup(token, currentUser.getId(), email);
 		return ResponseEntity.ok(groupToken);
 	}
 
-	@RequestMapping(path="/api/group/{token}/invitation", method=RequestMethod.PUT)
+	/**
+	 * Adds a user to a registry group, no registry is created for this user.  Invitations are created
+	 * for every registry the current user has an invitation for
+	 */
+	@RequestMapping(path="/api/group/{token}/invite", method=RequestMethod.PUT)
 	public ResponseEntity<Void> inviteUserToGroup(@PathVariable String token, @RequestParam String email, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
 
 		//load registry for this group
 		List<Registry> groupRegistry = registryService.groupRegistries(token);
@@ -273,11 +285,11 @@ public class WishListServiceApi {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 		}
 
-		//remove any registries the authenticate account does not have an invitation for
+		//remove any registries the current user does not have an invitation for
 		Iterator<Registry> iterator = groupRegistry.iterator();
 		while (iterator.hasNext()) {
 			Registry registry = iterator.next();
-			boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registry.getId());
+			boolean invitationExists = invitationService.hasInvitation(currentUser.getId(), registry.getToken());
 			if (!invitationExists) {
 				iterator.remove();
 			}
@@ -290,20 +302,24 @@ public class WishListServiceApi {
 		//create account and create invitations
 		Account newAccount = accountService.register(email);
 		for (Registry registry : groupRegistry){
-			registryService.createInvitation(registry.getId(), newAccount.getId());
+			invitationService.createInvitation(registry.getToken(), newAccount.getId());
 		}
 
 		//send invitations to group
-		registryService.sendInvitation(email, token);
+		registryService.sendGroupInvitation(email, token);
 
 		return ResponseEntity.ok().build();
 	}
 
+	/**
+	 * Sends an group invitation to the email address
+	 */
 	@RequestMapping(path="/api/group/{token}/invitation", method=RequestMethod.POST)
 	public ResponseEntity<Void> sendGroupInvitation(@PathVariable String token, @RequestParam String email, HttpSession session){
 		registryService.sendInvitation(email, token);
 		return ResponseEntity.ok().build();
 	}
+
 
 	@RequestMapping(path="/api/mfa", method=RequestMethod.POST)
 	public ResponseEntity<String> requestMFAAuthorization(@RequestParam String phone, HttpSession session){
@@ -335,7 +351,7 @@ public class WishListServiceApi {
 
 	@RequestMapping(path="/api/group/{token}", method=RequestMethod.GET)
 	public ResponseEntity<List<Registry>> group(@PathVariable String token, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
 
 		//load all registry for this group
 		List<Registry> groupRegistry = registryService.groupRegistries(token);
@@ -343,11 +359,11 @@ public class WishListServiceApi {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 		}
 
-		//remove any registries the authenticate account does not have an invitation for
+		//remove any registries the current user does not have an invitation for
 		Iterator<Registry> iterator = groupRegistry.iterator();
 		while (iterator.hasNext()) {
 			Registry registry = iterator.next();
-			boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registry.getId());
+			boolean invitationExists = invitationService.hasInvitation(currentUser.getId(), registry.getToken());
 			if (!invitationExists) {
 				iterator.remove();
 			}
@@ -360,9 +376,12 @@ public class WishListServiceApi {
 		return ResponseEntity.ok(groupRegistry);
 	}
 
+	/**
+	 * Returns the registry in the group owned by the current user
+	 */
 	@RequestMapping(path="/api/group/{token}/default", method=RequestMethod.GET)
 	public ResponseEntity<Registry> groupUserRegistery(@PathVariable String token, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
 
 		List<Registry> groupRegistry = registryService.groupRegistries(token);
 		if (groupRegistry == null) {
@@ -372,7 +391,7 @@ public class WishListServiceApi {
 		Iterator<Registry> iterator = groupRegistry.iterator();
 		while (iterator.hasNext()) {
 			Registry registry = iterator.next();
-			boolean isOwner = registryService.isOwner(wishlistUser.getId(), registry.getId());
+			boolean isOwner = registryService.isOwner(currentUser.getId(), registry.getId());
 			if (isOwner) {
 				return ResponseEntity.ok(registry);
 			}
@@ -382,27 +401,27 @@ public class WishListServiceApi {
 	}
 
 	/**
-	 * Mark gift as purchased
+	 * Marks gift as purchased
 	 */
 	@RequestMapping(path="/api/registry/{registryId}/item/{registryItemId}/purchased", method=RequestMethod.PUT)
     public ResponseEntity<Void> purchasedToggle(@PathVariable int registryId, @PathVariable Integer registryItemId, HttpSession session){
-		Account wishlistUser = (Account)session.getAttribute("user");
+		Account currentUser = (Account)session.getAttribute("user");
+		Registry registry = registryService.registry(registryId);
 
-		boolean invitationExists = registryService.hasInvitation(wishlistUser.getId(), registryId);
+		boolean invitationExists = invitationService.hasInvitation(currentUser.getId(), registry.getToken());
 		if (!invitationExists) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
 
-		registryService.purchasedRegistryItem(registryItemId, wishlistUser.getName());
+		registryService.purchasedRegistryItem(registryItemId, currentUser.getName());
 
 		GiftPurchasedEvent event = new GiftPurchasedEvent();
-		event.who = wishlistUser.getName();
+		event.who = currentUser.getName();
 		event.registryId = registryId;
 		event.giftId = registryItemId;
 		eventBus.post(event);
 
         return ResponseEntity.ok().build();
 	}
-
 
 }
